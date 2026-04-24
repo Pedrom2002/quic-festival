@@ -26,8 +26,17 @@ export async function POST(req: NextRequest) {
   }
 
   const data = parsed.data;
-  const rateKey = `rsvp:${ip}:${data.email}`;
-  const rl = await rateLimit(rateKey, 3, 60_000);
+
+  // Limite global por IP (10/min) para travar enumeration / spam mesmo com emails diferentes.
+  const ipRl = await rateLimit(`rsvp:ip:${ip}`, 10, 60_000);
+  if (!ipRl.ok) {
+    return NextResponse.json(
+      { error: "Demasiados pedidos. Tenta mais tarde." },
+      { status: 429, headers: { "Retry-After": String(ipRl.retryAfterSeconds) } },
+    );
+  }
+  // Limite por (IP, email) — protege contra retries do mesmo user.
+  const rl = await rateLimit(`rsvp:${ip}:${data.email}`, 3, 60_000);
   if (!rl.ok) {
     return NextResponse.json(
       { error: "Demasiados pedidos. Tenta mais tarde." },
@@ -55,12 +64,12 @@ export async function POST(req: NextRequest) {
 
   if (insertError) {
     if (insertError.code === "23505") {
-      return NextResponse.json(
-        { error: "Este email já está registado." },
-        { status: 409 },
-      );
+      // Não revela se email já existe — protege contra user enumeration.
+      // Devolve 200 fake-success: utilizador legítimo pensará que ficou registado;
+      // não é re-enviado email (silently dropped). Atacante não consegue distinguir.
+      return NextResponse.json({ ok: true });
     }
-    console.error("[rsvp] insert", insertError);
+    console.error("[rsvp] insert", insertError.code ?? "unknown");
     return NextResponse.json(
       { error: "Não foi possível gravar. Tenta novamente." },
       { status: 500 },

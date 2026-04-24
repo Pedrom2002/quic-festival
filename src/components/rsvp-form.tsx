@@ -10,6 +10,7 @@ import { rsvpSchema, type RsvpInput } from "@/lib/validators";
 export default function RsvpForm() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const [serverInfo, setServerInfo] = useState<string | null>(null);
   const prefersReduced = useReducedMotion();
 
   const {
@@ -35,6 +36,7 @@ export default function RsvpForm() {
 
   async function onSubmit(values: RsvpInput) {
     setServerError(null);
+    setServerInfo(null);
     try {
       const res = await fetch("/api/rsvp", {
         method: "POST",
@@ -46,7 +48,12 @@ export default function RsvpForm() {
         setServerError(json?.error ?? "Algo correu mal. Tenta novamente.");
         return;
       }
-      router.push(`/confirmado/${json.token}`);
+      if (json?.token) {
+        router.push(`/confirmado/${json.token}`);
+        return;
+      }
+      // Resposta genérica (e.g. duplicado): não revela se já existia.
+      setServerInfo("Inscrição recebida. Vê o teu email para o QR de entrada.");
     } catch {
       setServerError("Sem ligação. Verifica a internet e tenta outra vez.");
     }
@@ -223,6 +230,11 @@ export default function RsvpForm() {
       {serverError && (
         <div className="form-error-banner" role="alert">
           {serverError}
+        </div>
+      )}
+      {serverInfo && (
+        <div className="form-info-banner" role="status">
+          {serverInfo}
         </div>
       )}
 

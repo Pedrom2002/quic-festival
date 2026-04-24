@@ -495,6 +495,16 @@ fieldset.radio-field legend .req {
   font-size: 0.85rem;
   font-family: var(--font-dm-sans);
 }
+.form-info-banner {
+  margin-top: 0.7rem;
+  padding: 0.6rem 0.8rem;
+  background: rgba(28, 61, 52, 0.1);
+  border: 2px solid var(--forest);
+  border-radius: 10px;
+  color: var(--forest);
+  font-size: 0.85rem;
+  font-family: var(--font-dm-sans);
+}
 
 .fade-up {
   opacity: 0;
