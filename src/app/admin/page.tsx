@@ -12,15 +12,25 @@ export default async function AdminPage() {
     )
     .order("created_at", { ascending: false });
 
+  const rows = guests ?? [];
+  const total = rows.length;
+  const companions = rows.reduce((s, g) => s + (g.companion_count ?? 0), 0);
+  const checkedIn = rows.filter((g) => g.checked_in_at).length;
+  const pending = total - checkedIn;
+  const today = new Date().toISOString().slice(0, 10);
+  const checkedInToday = rows.filter(
+    (g) => g.checked_in_at && g.checked_in_at.slice(0, 10) === today,
+  ).length;
+
   return (
     <div className="mx-auto max-w-6xl">
-      <div className="flex items-end justify-between mb-6">
+      <div className="flex items-end justify-between mb-6 gap-4 flex-wrap">
         <div>
           <h1 className="font-serif text-3xl font-black leading-none">
             Convidados
           </h1>
           <p className="text-sm opacity-60 mt-1">
-            {guests?.length ?? 0} inscrições
+            Total de inscrições + acompanhantes: {total + companions}
           </p>
         </div>
         <a
@@ -31,7 +41,45 @@ export default async function AdminPage() {
         </a>
       </div>
 
-      <GuestsTable initial={guests ?? []} />
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <Stat label="Inscritos" value={total} />
+        <Stat label="Acompanhantes" value={companions} />
+        <Stat label="Check-ins hoje" value={checkedInToday} accent />
+        <Stat label="Pendentes" value={pending} />
+      </div>
+
+      <GuestsTable initial={rows} />
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: number;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-2xl border-2 p-4 ${
+        accent
+          ? "border-[#FFD27A] bg-[#FFD27A]/10"
+          : "border-white/15 bg-white/5"
+      }`}
+    >
+      <div className="text-xs tracking-[.18em] uppercase opacity-60">
+        {label}
+      </div>
+      <div
+        className={`text-3xl font-black font-serif mt-1 ${
+          accent ? "text-[#FFD27A]" : ""
+        }`}
+      >
+        {value}
+      </div>
     </div>
   );
 }
