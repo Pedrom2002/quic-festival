@@ -53,14 +53,16 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
     <tr><td align="center" style="padding:28px 14px 40px 14px;">
 
       <!-- HERO -->
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
-        <tr><td align="center" style="padding:12px 0 20px 0;">
-          <img src="${logoUrl}" alt="QUIC Festival 2026" width="220" style="display:block;width:220px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
+        <tr><td align="center" style="padding:12px 0 0 0;">
+          <img src="${logoUrl}" alt="QUIC Festival 2026" width="300" style="display:block;width:300px;max-width:72%;height:auto;border:0;outline:none;text-decoration:none;" />
         </td></tr>
 
-        <!-- DATAS (mesma img do frontend) -->
-        <tr><td align="center" style="padding:0 0 18px 0;">
-          <img src="${site}/datas.png" alt="8 e 9 de Maio · Monsanto Open Air, Lisboa · Bilhetes em FNAC, Wortek, El Corte Inglês e Ticketline.pt" width="520" style="display:block;width:100%;max-width:520px;height:auto;border:0;outline:none;text-decoration:none;" />
+        <!-- DATAS (mesma img do frontend, sobrepõe levemente o logo) -->
+        <tr><td align="center" style="padding:0 0 14px 0;">
+          <div style="margin-top:-42px;">
+            <img src="${site}/datas.png" alt="8 e 9 de Maio · Monsanto Open Air, Lisboa · Bilhetes em FNAC, Wortek, El Corte Inglês e Ticketline.pt" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none;text-decoration:none;margin:0 auto;" />
+          </div>
         </td></tr>
       </table>
 
