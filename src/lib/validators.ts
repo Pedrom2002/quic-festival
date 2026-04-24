@@ -1,10 +1,18 @@
 import { z } from "zod";
 
 const phonePT = /^(\+351\s?)?9\d{8}$/;
+// Letras Unicode (p/ acentos), marcas combinatórias, espaços, apóstrofos, hífens, ponto.
+// Bloqueia HTML, ASCII control, dígitos, símbolos exóticos.
+const namePattern = /^[\p{L}\p{M}\s'.\-]{2,120}$/u;
 
 export const rsvpSchema = z
   .object({
-    name: z.string().trim().min(2, "Nome demasiado curto").max(120),
+    name: z
+      .string()
+      .trim()
+      .min(2, "Nome demasiado curto")
+      .max(120)
+      .regex(namePattern, "Nome contém caracteres inválidos"),
     email: z.string().trim().toLowerCase().email("Email inválido"),
     phone: z
       .string()
@@ -21,6 +29,12 @@ export const rsvpSchema = z
           code: z.ZodIssueCode.custom,
           path: ["companion_nome"],
           message: "Nome do acompanhante obrigatório",
+        });
+      } else if (!namePattern.test(data.companion_nome)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["companion_nome"],
+          message: "Nome do acompanhante contém caracteres inválidos",
         });
       }
       if (!data.companion_tel || !phonePT.test(data.companion_tel)) {

@@ -28,14 +28,25 @@ export default async function AdminLayout({
   return (
     <div className="min-h-dvh bg-[#06182A] text-[#F4EBD6]">
       <header className="flex items-center justify-between border-b border-white/10 px-6 py-4">
-        <div className="text-sm tracking-[.22em] uppercase text-[#FFD27A]">
+        <a
+          href="/admin"
+          className="text-sm tracking-[.22em] uppercase text-[#FFD27A] hover:opacity-80"
+        >
           QUIC · admin
+        </a>
+        <div className="flex items-center gap-4">
+          <a
+            href="/admin/account"
+            className="text-xs tracking-[.18em] uppercase opacity-70 hover:opacity-100"
+          >
+            Conta
+          </a>
+          <form action="/api/admin/signout" method="post">
+            <button className="text-xs tracking-[.18em] uppercase opacity-70 hover:opacity-100">
+              Sair
+            </button>
+          </form>
         </div>
-        <form action="/api/admin/signout" method="post">
-          <button className="text-xs tracking-[.18em] uppercase opacity-70 hover:opacity-100">
-            Sair
-          </button>
-        </form>
       </header>
       <main className="p-6">{children}</main>
     </div>
