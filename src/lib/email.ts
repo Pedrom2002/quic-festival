@@ -1,6 +1,13 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let cached: Resend | null = null;
+function client(): Resend {
+  if (cached) return cached;
+  const key = process.env.RESEND_API_KEY;
+  if (!key) throw new Error("RESEND_API_KEY em falta");
+  cached = new Resend(key);
+  return cached;
+}
 
 type SendArgs = {
   to: string;
@@ -74,7 +81,7 @@ Abrir no browser: ${confirmUrl}
 Adicionar ao calendário: ${icsUrl}
 `;
 
-  const { data, error } = await resend.emails.send({
+  const { data, error } = await client().emails.send({
     from,
     to,
     subject,
