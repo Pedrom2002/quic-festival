@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@/lib/supabase/client";
 
+type Mode = "password" | "magic";
+
 export default function AdminLoginPage() {
+  const router = useRouter();
+  const [mode, setMode] = useState<Mode>("password");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
     "idle",
   );
@@ -13,7 +19,24 @@ export default function AdminLoginPage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("sending");
+    setMessage("");
     const supabase = supabaseBrowser();
+
+    if (mode === "password") {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) {
+        setStatus("error");
+        setMessage(error.message);
+        return;
+      }
+      router.push("/admin");
+      router.refresh();
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
@@ -39,22 +62,69 @@ export default function AdminLoginPage() {
           Admin <em className="text-[#E8613C] italic">QUIC</em>
         </h1>
         <p className="text-sm opacity-70 mt-1 mb-4">
-          Magic link para entrar no painel.
+          Entra no painel de gestão.
         </p>
+
+        <div className="flex gap-1 rounded-full border-2 border-[#06111B] p-1 mb-4 text-xs">
+          <button
+            type="button"
+            onClick={() => setMode("password")}
+            className={`flex-1 px-3 py-2 rounded-full tracking-[.14em] uppercase font-bold transition ${
+              mode === "password"
+                ? "bg-[#06111B] text-[#FFD27A]"
+                : "opacity-70 hover:opacity-100"
+            }`}
+          >
+            Password
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("magic")}
+            className={`flex-1 px-3 py-2 rounded-full tracking-[.14em] uppercase font-bold transition ${
+              mode === "magic"
+                ? "bg-[#06111B] text-[#FFD27A]"
+                : "opacity-70 hover:opacity-100"
+            }`}
+          >
+            Magic Link
+          </button>
+        </div>
+
         <label className="block text-sm font-bold mb-1">Email</label>
         <input
           type="email"
           required
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full border-b-2 border-[#06111B] bg-transparent py-2 text-base outline-none focus:border-[#F2A93C]"
+          className="w-full border-b-2 border-[#06111B] bg-transparent py-2 text-base outline-none focus:border-[#F2A93C] mb-3"
           placeholder="tu@exemplo.pt"
         />
+
+        {mode === "password" && (
+          <>
+            <label className="block text-sm font-bold mb-1">Password</label>
+            <input
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border-b-2 border-[#06111B] bg-transparent py-2 text-base outline-none focus:border-[#F2A93C]"
+              placeholder="••••••••"
+            />
+          </>
+        )}
+
         <button
           disabled={status === "sending"}
           className="mt-5 w-full rounded-full border-2 border-[#06111B] bg-[#06111B] text-[#FFD27A] px-4 py-3 font-black tracking-[.14em] disabled:opacity-60"
         >
-          {status === "sending" ? "A ENVIAR…" : "ENVIAR MAGIC LINK"}
+          {status === "sending"
+            ? "A ENTRAR…"
+            : mode === "password"
+              ? "ENTRAR"
+              : "ENVIAR MAGIC LINK"}
         </button>
         {message && (
           <p

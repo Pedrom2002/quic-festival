@@ -37,18 +37,33 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="color-scheme" content="light" />
-  <meta name="supported-color-schemes" content="light" />
+  <meta name="color-scheme" content="light only" />
+  <meta name="supported-color-schemes" content="light only" />
   <title>${subject}</title>
+  <style>
+    :root { color-scheme: light only; supported-color-schemes: light only; }
+    /* Gmail iOS / Android dark mode lock */
+    u + .body .gmail-blend-screen { background: #06182A; mix-blend-mode: screen; }
+    u + .body .gmail-blend-difference { background: #06182A; mix-blend-mode: difference; }
+    /* Apple Mail dark mode lock */
+    @media (prefers-color-scheme: dark) {
+      .lock-bg { background: #06182A !important; }
+      .lock-paper { background: #F4EBD6 !important; color: #06111B !important; }
+      .lock-ink { color: #06111B !important; }
+      .lock-glow { color: #FFD27A !important; }
+      .lock-coral { color: #E8613C !important; }
+      .lock-amber { color: #F2A93C !important; }
+    }
+  </style>
 </head>
-<body style="margin:0;padding:0;background:#06182A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#F4EBD6;">
+<body class="body lock-bg" style="margin:0;padding:0;background:#06182A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#F4EBD6;">
 
   <!-- preheader -->
   <div style="display:none!important;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px;mso-hide:all;">
     ${preheader}
   </div>
 
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#06182A;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#06182A" class="lock-bg" style="background:#06182A;">
     <tr><td align="center" style="padding:28px 14px 40px 14px;">
 
       <!-- HERO -->
@@ -66,7 +81,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
       </table>
 
       <!-- PAPER CARD -->
-      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background:#F4EBD6;color:#06111B;border-radius:22px;border:2px solid #06111B;">
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" bgcolor="#F4EBD6" class="lock-paper" style="max-width:560px;width:100%;background:#F4EBD6;color:#06111B;border-radius:22px;border:2px solid #06111B;">
         <tr><td style="padding:30px 30px 6px 30px;">
           <p style="margin:0;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#E8613C;font-weight:700;">Confirmação · RSVP</p>
           <h1 style="margin:10px 0 0 0;font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;font-weight:900;color:#06111B;">

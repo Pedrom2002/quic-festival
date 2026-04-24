@@ -468,6 +468,14 @@ fieldset.radio-field legend .req {
   height: 20px;
   flex: none;
 }
+.btn-submit svg.spin {
+  animation: spin 0.85s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 .fine-print {
   margin-top: 0.85rem;

@@ -188,26 +188,52 @@ export default function RsvpForm() {
         type="submit"
         className="btn-submit"
         disabled={isSubmitting}
+        aria-busy={isSubmitting}
         variants={item}
       >
         <span>{isSubmitting ? "A CONFIRMAR…" : "CONFIRMAR PRESENÇA"}</span>
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M5 12h14" />
-          <path d="M13 6l6 6-6 6" />
-        </svg>
+        {isSubmitting ? (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.6"
+            strokeLinecap="round"
+            className="spin"
+            aria-hidden="true"
+          >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+        ) : (
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 12h14" />
+            <path d="M13 6l6 6-6 6" />
+          </svg>
+        )}
       </motion.button>
 
-      {serverError && <div className="form-error-banner">{serverError}</div>}
+      {serverError && (
+        <div className="form-error-banner" role="alert">
+          {serverError}
+        </div>
+      )}
 
       <motion.p className="fine-print" variants={item}>
-        Ao confirmar, aceitas receber info do festival por email.
+        Ao confirmar autorizas o tratamento dos teus dados (nome, email, telefone) apenas para
+        gestão da entrada e comunicação relativa ao QUIC Festival 2026, conforme RGPD. Não
+        partilhamos com terceiros. Pedidos de eliminação:{" "}
+        <a href="mailto:ola@quic.pt" style={{ color: "inherit", textDecoration: "underline" }}>
+          ola@quic.pt
+        </a>
+        .
       </motion.p>
     </motion.form>
   );
