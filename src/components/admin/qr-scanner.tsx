@@ -19,6 +19,7 @@ export default function QrScanner() {
   const [history, setHistory] = useState<ScanResult[]>([]);
   const [busy, setBusy] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [manual, setManual] = useState("");
 
   const lastTokenRef = useRef<{ token: string; at: number } | null>(null);
   const scannerRef = useRef<unknown>(null);
@@ -169,6 +170,39 @@ export default function QrScanner() {
           </div>
         )}
       </div>
+
+      <details className="rounded-xl border border-white/15 bg-white/5">
+        <summary className="cursor-pointer px-4 py-3 text-xs tracking-[.18em] uppercase opacity-80 hover:opacity-100">
+          Inserir token manualmente
+        </summary>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const v = manual.trim();
+            if (!v) return;
+            setManual("");
+            void onDecode(v);
+          }}
+          className="flex gap-2 p-3 pt-0"
+        >
+          <input
+            value={manual}
+            onChange={(e) => setManual(e.target.value)}
+            placeholder="UUID do token"
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            className="flex-1 min-w-0 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-mono outline-none focus:border-[#FFD27A]"
+          />
+          <button
+            type="submit"
+            disabled={busy}
+            className="rounded-lg border-2 border-[#FFD27A] text-[#FFD27A] px-3 py-2 text-xs tracking-[.16em] uppercase hover:bg-[#FFD27A] hover:text-[#06111B] disabled:opacity-50 transition"
+          >
+            Check-in
+          </button>
+        </form>
+      </details>
 
       <div
         className={`rounded-2xl border-2 p-5 text-white transition ${lastBg}`}
