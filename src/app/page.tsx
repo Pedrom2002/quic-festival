@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Scene from "@/components/scene";
-import Blobs from "@/components/blobs";
 import RsvpForm from "@/components/rsvp-form";
 import Lineup from "@/components/lineup";
 
@@ -16,7 +15,6 @@ export default function HomePage() {
   return (
     <>
       <Scene />
-      <Blobs />
 
       <main className={`site-main${mounted ? " in" : ""}`}>
         <section className="hero">
