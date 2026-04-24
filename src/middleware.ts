@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const MAX_BODY_BYTES = 64 * 1024; // 64KB chega para qualquer payload das APIs.
 
 function originAllowed(origin: string | null, host: string | null): boolean {
   if (!origin) return false;
@@ -38,6 +39,18 @@ export function middleware(req: NextRequest) {
         { error: "Origin não permitida." },
         { status: 403 },
       );
+    }
+
+    // Limite de body size — protege contra DoS via JSON gigantes.
+    const cl = req.headers.get("content-length");
+    if (cl) {
+      const n = parseInt(cl, 10);
+      if (!Number.isNaN(n) && n > MAX_BODY_BYTES) {
+        return NextResponse.json(
+          { error: "Pedido demasiado grande." },
+          { status: 413 },
+        );
+      }
     }
   }
 

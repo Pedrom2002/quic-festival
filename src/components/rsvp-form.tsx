@@ -241,7 +241,8 @@ export default function RsvpForm() {
       <motion.p className="fine-print" variants={item}>
         Ao confirmar autorizas o tratamento dos teus dados (nome, email, telefone) apenas para
         gestão da entrada e comunicação relativa ao QUIC Festival 2026, conforme RGPD. Não
-        partilhamos com terceiros. Pedidos de eliminação:{" "}
+        partilhamos com terceiros. Para análise de tráfego usamos Vercel Analytics (estatística
+        agregada, sem cookies de marketing). Pedidos de eliminação:{" "}
         <a href="mailto:ola@quic.pt" style={{ color: "inherit", textDecoration: "underline" }}>
           ola@quic.pt
         </a>

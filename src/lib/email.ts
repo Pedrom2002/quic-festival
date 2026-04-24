@@ -21,6 +21,11 @@ function escapeHtml(s: string) {
   );
 }
 
+// Plain-text safe: remove CR/LF para impedir injecção de linhas no fallback texto.
+function textSafe(s: string) {
+  return s.replace(/[\r\n]+/g, " ").trim();
+}
+
 export async function sendRsvpEmail({ to, name, token }: SendArgs) {
   const from = process.env.RESEND_FROM ?? "QUIC Festival <onboarding@resend.dev>";
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
@@ -31,6 +36,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
   const subject = "Tás dentro · QUIC Festival 2026";
   const preheader = "Mostra o QR à entrada · QUIC Festival 2026, Lisboa";
   const safeName = escapeHtml(name);
+  const textName = textSafe(name);
 
   const html = `<!doctype html>
 <html lang="pt-PT">
@@ -158,7 +164,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
 
   const text = `QUIC Festival 2026 — tás dentro.
 
-Olá ${name},
+Olá ${textName},
 
 O QR em anexo é a tua entrada no QUIC Festival 2026, Lisboa.
 Portas às 17:00.

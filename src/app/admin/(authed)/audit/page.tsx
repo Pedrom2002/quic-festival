@@ -21,6 +21,9 @@ const ACTION_FILTERS = [
   ["admin.signout", "Logouts"],
 ] as const;
 
+type FilterKey = (typeof ACTION_FILTERS)[number][0];
+const FILTER_KEYS = new Set<string>(ACTION_FILTERS.map(([k]) => k));
+
 function colorFor(action: string): string {
   if (action.endsWith(".fail")) return "text-rose-300 border-rose-500/40";
   if (action.endsWith(".duplicate"))
@@ -37,7 +40,11 @@ export default async function AuditPage({
 }: {
   searchParams: Promise<{ filter?: string }>;
 }) {
-  const { filter = "all" } = await searchParams;
+  const { filter: rawFilter = "all" } = await searchParams;
+  // Whitelist explícito: ignora qualquer valor fora da lista conhecida.
+  const filter: FilterKey = (FILTER_KEYS.has(rawFilter)
+    ? rawFilter
+    : "all") as FilterKey;
 
   const admin = supabaseAdmin();
   let query = admin
@@ -47,7 +54,7 @@ export default async function AuditPage({
     .limit(200);
 
   if (filter !== "all") {
-    query = query.like("action", `${filter}%`);
+    query = query.like("action", `${filter}.%`);
   }
 
   const { data, error } = await query;

@@ -89,6 +89,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Revoga todas as outras sessões deste user (mantém a atual).
+  // Defense-in-depth: se a password antiga estava comprometida, qualquer attacker logado
+  // noutro device perde acesso imediato.
+  try {
+    await supa.auth.signOut({ scope: "others" });
+  } catch {
+    /* falha silenciosa — password já foi atualizada */
+  }
+
   await audit({
     action: "admin.signin.password.ok",
     actorEmail: user.email,
