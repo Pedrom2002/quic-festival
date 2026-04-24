@@ -4,11 +4,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { motion, useReducedMotion } from "framer-motion";
 import { rsvpSchema, type RsvpInput } from "@/lib/validators";
 
 export default function RsvpForm() {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
+  const prefersReduced = useReducedMotion();
 
   const {
     register,
@@ -50,16 +52,39 @@ export default function RsvpForm() {
     }
   }
 
-  return (
-    <form className="form-card" noValidate onSubmit={handleSubmit(onSubmit)}>
-      <h2>
-        Confirma a tua <em>presença</em>.
-      </h2>
-      <p className="subtitle">
-        Precisamos só de alguns dados para te pôr na lista.
-      </p>
+  const container = {
+    hidden: {},
+    show: {
+      transition: { staggerChildren: prefersReduced ? 0 : 0.08 },
+    },
+  };
+  const item = {
+    hidden: prefersReduced ? { opacity: 1, y: 0 } : { opacity: 0, y: 16 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: prefersReduced ? 0 : 0.5, ease: [0.2, 0.7, 0.3, 1] as const },
+    },
+  };
 
-      <div className="field">
+  return (
+    <motion.form
+      className="form-card"
+      noValidate
+      onSubmit={handleSubmit(onSubmit)}
+      variants={container}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "-10%" }}
+    >
+      <motion.h2 variants={item}>
+        Confirma a tua <em>presença</em>.
+      </motion.h2>
+      <motion.p className="subtitle" variants={item}>
+        Precisamos só de alguns dados para te pôr na lista.
+      </motion.p>
+
+      <motion.div className="field" variants={item}>
         <label htmlFor="nome">
           Nome completo <span className="req">*</span>
         </label>
@@ -71,9 +96,9 @@ export default function RsvpForm() {
           {...register("name")}
         />
         {errors.name && <p className="field-error">{errors.name.message}</p>}
-      </div>
+      </motion.div>
 
-      <div className="field">
+      <motion.div className="field" variants={item}>
         <label htmlFor="tel">
           Telefone <span className="req">*</span>
         </label>
@@ -86,9 +111,9 @@ export default function RsvpForm() {
           {...register("phone")}
         />
         {errors.phone && <p className="field-error">{errors.phone.message}</p>}
-      </div>
+      </motion.div>
 
-      <div className="field">
+      <motion.div className="field" variants={item}>
         <label htmlFor="email">
           Email <span className="req">*</span>
         </label>
@@ -102,9 +127,9 @@ export default function RsvpForm() {
           {...register("email")}
         />
         {errors.email && <p className="field-error">{errors.email.message}</p>}
-      </div>
+      </motion.div>
 
-      <fieldset className="radio-field">
+      <motion.fieldset className="radio-field" variants={item}>
         <legend>
           Levas acompanhante? <span className="req">*</span>
         </legend>
@@ -121,7 +146,7 @@ export default function RsvpForm() {
         {errors.acompanhante && (
           <p className="field-error">{errors.acompanhante.message}</p>
         )}
-      </fieldset>
+      </motion.fieldset>
 
       <div
         className={`companion${bringsCompanion ? " open" : ""}`}
@@ -159,7 +184,12 @@ export default function RsvpForm() {
         </div>
       </div>
 
-      <button type="submit" className="btn-submit" disabled={isSubmitting}>
+      <motion.button
+        type="submit"
+        className="btn-submit"
+        disabled={isSubmitting}
+        variants={item}
+      >
         <span>{isSubmitting ? "A CONFIRMAR…" : "CONFIRMAR PRESENÇA"}</span>
         <svg
           viewBox="0 0 24 24"
@@ -172,13 +202,13 @@ export default function RsvpForm() {
           <path d="M5 12h14" />
           <path d="M13 6l6 6-6 6" />
         </svg>
-      </button>
+      </motion.button>
 
       {serverError && <div className="form-error-banner">{serverError}</div>}
 
-      <p className="fine-print">
+      <motion.p className="fine-print" variants={item}>
         Ao confirmar, aceitas receber info do festival por email.
-      </p>
-    </form>
+      </motion.p>
+    </motion.form>
   );
 }
