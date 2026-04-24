@@ -25,12 +25,11 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
   const from = process.env.RESEND_FROM ?? "QUIC Festival <onboarding@resend.dev>";
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const confirmUrl = `${site}/confirmado/${token}`;
-  const icsUrl = `${site}/api/ics/${token}`;
   const qrUrl = `${site}/api/qr/${token}`;
   const logoUrl = `${site}/logo.png`;
 
   const subject = "Tás dentro · QUIC Festival 2026";
-  const preheader = "Mostra o QR à entrada · Monsanto Open Air, Lisboa";
+  const preheader = "Mostra o QR à entrada · QUIC Festival 2026, Lisboa";
   const safeName = escapeHtml(name);
 
   const html = `<!doctype html>
@@ -61,7 +60,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
         <!-- DATAS (mesma img do frontend, sobrepõe levemente o logo) -->
         <tr><td align="center" style="padding:0 0 14px 0;">
           <div style="margin-top:-42px;">
-            <img src="${site}/datas.png" alt="8 e 9 de Maio · Monsanto Open Air, Lisboa · Bilhetes em FNAC, Wortek, El Corte Inglês e Ticketline.pt" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none;text-decoration:none;margin:0 auto;" />
+            <img src="${site}/datas.png" alt="8 e 9 de Maio · QUIC Festival 2026, Lisboa · Bilhetes em FNAC, Wortek, El Corte Inglês e Ticketline.pt" width="600" style="display:block;width:100%;max-width:600px;height:auto;border:0;outline:none;text-decoration:none;margin:0 auto;" />
           </div>
         </td></tr>
       </table>
@@ -74,7 +73,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
             Olá ${safeName}, tás <em style="color:#F2A93C;font-style:italic;">dentro</em>.
           </h1>
           <p style="margin:14px 0 0 0;font-size:15px;line-height:1.55;color:#3a4b5a;">
-            Guarda este email. O QR abaixo é a tua entrada no <strong style="color:#06111B;">Monsanto Open Air, Lisboa</strong>.
+            Guarda este email. O QR abaixo é a tua entrada no <strong style="color:#06111B;">QUIC Festival 2026, Lisboa</strong>.
           </p>
         </td></tr>
 
@@ -99,11 +98,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
           </table>
         </td></tr>
 
-        <tr><td align="center" style="padding:2px 30px 20px 30px;">
-          <a href="${icsUrl}" style="display:inline-block;color:#06111B;text-decoration:underline;font-size:13px;letter-spacing:.08em;">
-            Adicionar ao calendário (.ics)
-          </a>
-        </td></tr>
+        <tr><td style="padding:14px 0 0 0;"></td></tr>
 
         <!-- DIVIDER -->
         <tr><td style="padding:0 30px;">
@@ -116,7 +111,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
             <tr>
               <td width="50%" valign="top" style="padding-right:8px;">
                 <p style="margin:0;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;font-weight:700;">Local</p>
-                <p style="margin:4px 0 0 0;font-family:Georgia,serif;font-size:17px;font-weight:900;color:#06111B;line-height:1.15;">Monsanto<br/>Open Air</p>
+                <p style="margin:4px 0 0 0;font-family:Georgia,serif;font-size:17px;font-weight:900;color:#06111B;line-height:1.15;">QUIC<br/>Festival 2026</p>
               </td>
               <td width="50%" valign="top" style="padding-left:8px;">
                 <p style="margin:0;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;font-weight:700;">Portas</p>
@@ -150,11 +145,10 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
 
 Olá ${name},
 
-O QR em anexo é a tua entrada no Monsanto Open Air, Lisboa.
+O QR em anexo é a tua entrada no QUIC Festival 2026, Lisboa.
 Portas às 17:00.
 
 Abrir no browser: ${confirmUrl}
-Adicionar ao calendário: ${icsUrl}
 
 Dúvidas? Responde a este email.
 — QUIC Festival
