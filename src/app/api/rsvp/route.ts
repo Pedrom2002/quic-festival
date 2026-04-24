@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
 
   const data = parsed.data;
   const rateKey = `rsvp:${ip}:${data.email}`;
-  const rl = rateLimit(rateKey, 3, 60_000);
+  const rl = await rateLimit(rateKey, 3, 60_000);
   if (!rl.ok) {
     return NextResponse.json(
       { error: "Demasiados pedidos. Tenta mais tarde." },
