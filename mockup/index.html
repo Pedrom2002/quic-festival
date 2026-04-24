@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#06182A" />
+<title>QUIC Festival 2026 · RSVP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Stencil+Display:wght@500;700;900&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,400;1,9..144,700&family=DM+Sans:wght@400;500;700&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night-deep:#06182A;
+    --night:#0F2A3E;
+    --night-2:#173A52;
+    --forest:#1C3D34;
+    --forest-2:#0A2018;
+    --glow:#FFD27A;
+    --glow-hot:#F2A93C;
+    --glow-white:#FFEFC4;
+    --paper:#F4EBD6;
+    --paper-2:#E8DCC0;
+    --ink:#06111B;
+    --shadow-hard: 5px 5px 0 var(--ink);
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+  }
+
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%; width:100%;}
+  html{ -webkit-text-size-adjust:100%; }
+  body{
+    font-family:'DM Sans', system-ui, sans-serif;
+    color:var(--paper);
+    overflow-x:hidden;
+    position:relative;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(130% 95% at 50% 0%, var(--night-2) 0%, var(--night) 38%, var(--night-deep) 72%, #03111E 100%);
+    min-height:100vh;
+    min-height:100dvh;
+  }
+
+  /* ========= BG SCENE ========= */
+  .scene{position:fixed; inset:0; z-index:0; pointer-events:none; overflow:hidden;}
+
+  .stars{position:absolute; inset:0;}
+  .stars .s{
+    position:absolute; width:2px; height:2px; border-radius:99px;
+    background:var(--glow-white);
+    box-shadow:0 0 5px rgba(255,239,196,.9);
+    animation: twinkle 3.4s ease-in-out infinite;
+  }
+  @keyframes twinkle{
+    0%,100%{opacity:.25; transform:scale(.8);}
+    50%{opacity:1; transform:scale(1.15);}
+  }
+
+  .lights{position:absolute; left:-6%; right:-6%; top:7%; width:112%; height:160px;}
+  .lights svg{width:100%; height:100%;}
+  .lights .bulb{
+    position:absolute; width:8px; height:8px; border-radius:99px;
+    background:var(--glow);
+    box-shadow:
+      0 0 6px var(--glow),
+      0 0 14px rgba(255,210,122,.7),
+      0 0 28px rgba(255,210,122,.35);
+    animation: pulse 2.6s ease-in-out infinite;
+    transform:translate(-50%,-50%);
+  }
+  @keyframes pulse{
+    0%,100%{opacity:.75; transform:translate(-50%,-50%) scale(1);}
+    50%{opacity:1; transform:translate(-50%,-50%) scale(1.2);}
+  }
+
+  .scenery{
+    position:absolute; left:0; right:0; bottom:0;
+    width:100%; height:auto;
+    display:block;
+    pointer-events:none;
+    user-select:none;
+    z-index:1;
+  }
+  @media (min-width:980px){
+    .scenery{width:100%;}
+  }
+
+  .grain{
+    position:fixed; inset:0; pointer-events:none; z-index:40;
+    mix-blend-mode:overlay; opacity:.2;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 0.92 0 0 0 0 0.72 0 0 0 0.85 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+
+  .fly{
+    position:fixed; width:5px; height:5px; border-radius:99px;
+    background:var(--glow-white);
+    box-shadow:0 0 10px var(--glow), 0 0 22px rgba(255,210,122,.7);
+    z-index:3; pointer-events:none; opacity:0;
+    animation: drift 14s linear infinite;
+  }
+  .fly.f1{left:8%; top:60%; animation-delay:0s;}
+  .fly.f2{left:75%; top:65%; animation-delay:5s;}
+  @keyframes drift{
+    0%{opacity:0; transform:translate(0,0) scale(.8);}
+    15%{opacity:1;}
+    50%{transform:translate(30px,-70px) scale(1.1);}
+    85%{opacity:1;}
+    100%{opacity:0; transform:translate(90px,-180px) scale(.8);}
+  }
+
+  /* ========= LAYOUT (mobile-first) ========= */
+  main{
+    position:relative; z-index:2;
+    min-height:100vh; min-height:100dvh;
+    padding: var(--safe-t) 1.15rem calc(2.5rem + var(--safe-b));
+    display:flex; flex-direction:column;
+    gap:1rem;
+    max-width:100%;
+  }
+
+  /* ========= HERO ========= */
+  .hero{position:relative;}
+  .topbar{
+    position:absolute; top:0; left:0;
+    display:flex; align-items:center; gap:.55rem;
+    margin-bottom:.5rem;
+    font-family:'DM Sans'; font-weight:500;
+    font-size:.72rem; letter-spacing:.22em; text-transform:uppercase;
+    color:var(--glow);
+    z-index:3;
+  }
+  .topbar .dot{
+    width:8px;height:8px;border-radius:99px;background:var(--glow);
+    box-shadow:0 0 9px var(--glow), 0 0 20px rgba(255,210,122,.7);
+    flex:none;
+  }
+
+  h1.title{
+    display:block;
+    line-height:0;
+    filter: drop-shadow(0 0 32px rgba(255,210,122,.28));
+    margin-top: 0;
+  }
+  h1.title img{
+    display:block;
+    width:min(82%, 520px);
+    height:auto;
+    user-select:none;
+    margin: 0 auto;
+  }
+
+  .datas{
+    margin-top:-2rem;
+    position:relative;
+    z-index:2;
+    filter: drop-shadow(0 0 18px rgba(255,210,122,.2));
+  }
+  .datas img{
+    display:block;
+    width:min(92%, 560px);
+    height:auto;
+    user-select:none;
+  }
+
+  .scroll-hint{
+    margin-top:1.6rem; display:flex; align-items:center; gap:.55rem;
+    font-family:'Caveat'; font-weight:700; font-size:1.3rem;
+    color:var(--glow);
+    transform:rotate(-2deg);
+  }
+  .scroll-hint svg{width:46px; height:22px; flex:none;}
+
+  /* ========= FORM CARD ========= */
+  .form-wrap{position:relative;}
+  .form-card{
+    position:relative;
+    background:
+      linear-gradient(180deg, rgba(244,235,214,.98) 0%, rgba(232,220,192,.97) 100%);
+    color:var(--ink);
+    border:2.5px solid var(--ink);
+    border-radius:18px;
+    padding:1.2rem .9rem 1rem;
+    transform:rotate(-.8deg);
+    box-shadow:
+      var(--shadow-hard),
+      0 0 40px rgba(255,210,122,.15);
+  }
+
+  .sticker{
+    position:absolute;
+    top:-18px; right:-8px;
+    background:var(--glow); color:var(--ink);
+    font-family:'Big Shoulders Stencil Display', sans-serif;
+    font-weight:900;
+    font-size:.95rem; letter-spacing:.26em;
+    padding:.5rem .9rem;
+    border:2.5px solid var(--ink);
+    border-radius:99px;
+    transform:rotate(9deg);
+    box-shadow:3px 3px 0 var(--ink), 0 0 22px rgba(255,210,122,.45);
+    z-index:3;
+  }
+
+  .form-card h2{
+    font-family:'Fraunces', serif; font-weight:900;
+    font-size:1.25rem;
+    line-height:1.05;
+    margin-bottom:.2rem;
+    letter-spacing:-0.01em;
+    color:var(--ink);
+    max-width:13ch;
+  }
+  .form-card h2 em{font-style:italic; font-weight:700; color:var(--glow-hot);}
+  .form-card .subtitle{
+    font-size:.8rem; margin-bottom:.9rem; max-width:38ch;
+    color:rgba(6,17,27,.72);
+  }
+
+  .field{position:relative; margin-bottom:.75rem;}
+  .field label{
+    display:block;
+    font-family:'Fraunces', serif; font-weight:700;
+    font-size:.95rem; margin-bottom:.3rem;
+    letter-spacing:-0.01em; color:var(--ink);
+  }
+  .field label .req{color:var(--glow-hot); font-weight:900;}
+  .field input{
+    width:100%;
+    background:transparent;
+    border:none;
+    border-bottom:2px solid var(--ink);
+    padding:.55rem .1rem .6rem;
+    font-family:'DM Sans', sans-serif;
+    font-size:16px; /* avoids iOS zoom on focus */
+    color:var(--ink);
+    outline:none;
+    border-radius:0; /* kill iOS default */
+    transition: border-color .2s;
+    min-height:44px;
+  }
+  .field input::placeholder{color:rgba(6,17,27,.35);}
+  .field input:focus{border-color:var(--glow-hot);}
+  .field::after{
+    content:"";
+    position:absolute; left:0; bottom:0; height:3px; width:0;
+    background:var(--glow-hot);
+    transition: width .35s cubic-bezier(.2,.7,.3,1);
+    pointer-events:none;
+  }
+  .field:focus-within::after{width:100%;}
+
+  /* radio sticker */
+  fieldset.radio-field{border:none; margin-bottom:.85rem;}
+  fieldset.radio-field legend{
+    font-family:'Fraunces', serif; font-weight:700;
+    font-size:.95rem; margin-bottom:.6rem; color:var(--ink);
+  }
+  fieldset.radio-field legend .req{color:var(--glow-hot); font-weight:900;}
+
+  .radio-group{display:flex; gap:.7rem; flex-wrap:wrap;}
+  .sticker-radio{
+    position:relative; cursor:pointer;
+    font-family:'Big Shoulders Stencil Display', sans-serif;
+    font-weight:900; font-size:1rem; letter-spacing:.12em;
+    padding:.65rem 1.25rem;
+    min-height:44px; min-width:90px;
+    display:inline-flex; align-items:center; justify-content:center;
+    background:var(--paper);
+    color:var(--ink);
+    border:2.5px solid var(--ink);
+    border-radius:99px;
+    box-shadow:3px 3px 0 var(--ink);
+    transition: transform .18s, box-shadow .18s, background .18s, color .18s;
+    user-select:none;
+    flex:1 1 auto;
+    text-align:center;
+  }
+  .sticker-radio input{position:absolute; opacity:0; inset:0; cursor:pointer; width:100%; height:100%;}
+  .sticker-radio:active{transform:translate(1px,1px); box-shadow:2px 2px 0 var(--ink);}
+  .sticker-radio.yes:has(input:checked){
+    background:var(--glow); color:var(--ink);
+    transform:rotate(-3deg);
+    box-shadow:3px 3px 0 var(--ink), 0 0 18px rgba(255,210,122,.7);
+  }
+  .sticker-radio.no:has(input:checked){
+    background:var(--night); color:var(--paper);
+    transform:rotate(2deg);
+    box-shadow:3px 3px 0 var(--glow);
+  }
+
+  /* companion reveal */
+  .companion{
+    max-height:0; opacity:0; overflow:hidden;
+    transition: max-height .55s cubic-bezier(.2,.7,.3,1), opacity .45s, margin .4s;
+    margin-bottom:0;
+  }
+  .companion.open{max-height:640px; opacity:1; margin-bottom:1rem;}
+  .plus-one{
+    display:flex; align-items:center; gap:.6rem;
+    color:var(--glow-hot);
+    transform:rotate(-3deg);
+    margin:.7rem 0 .9rem;
+    line-height:1;
+  }
+  .plus-one .line{
+    width:40px; height:3px; background:var(--ink); border-radius:99px;
+    flex:none;
+  }
+  .plus-one .plus{
+    font-family:'Caveat', cursive; font-weight:700;
+    font-size:2rem; line-height:.8;
+    color:var(--glow-hot);
+    display:inline-block;
+  }
+  .plus-one .tiny{
+    font-family:'DM Sans'; font-size:.68rem; font-weight:700;
+    letter-spacing:.2em; text-transform:uppercase;
+    color:var(--ink);
+    line-height:1.1;
+  }
+
+  /* submit */
+  .btn-submit{
+    margin-top:.7rem;
+    width:100%;
+    display:inline-flex; align-items:center; justify-content:center; gap:.7rem;
+    font-family:'Big Shoulders Stencil Display', sans-serif;
+    font-weight:900; font-size:1.1rem; letter-spacing:.14em;
+    padding:1.05rem 1.2rem;
+    min-height:52px;
+    background:var(--ink); color:var(--glow);
+    border:2.5px solid var(--ink); border-radius:99px;
+    cursor:pointer;
+    box-shadow: 5px 5px 0 var(--glow-hot), 0 0 24px rgba(255,210,122,.45);
+    transition: transform .2s cubic-bezier(.2,.7,.3,1.4), box-shadow .2s, background .2s, color .2s;
+  }
+  .btn-submit:active{
+    transform: translate(2px,2px);
+    box-shadow: 2px 2px 0 var(--ink), 0 0 18px rgba(255,210,122,.35);
+    background:var(--glow); color:var(--ink);
+  }
+  .btn-submit svg{width:20px;height:20px; flex:none;}
+
+  .fine-print{
+    margin-top:.85rem; font-size:.74rem;
+    text-align:center; color:rgba(6,17,27,.55);
+    font-family:'DM Sans';
+  }
+
+  /* confirmation overlay */
+  .overlay{
+    position:fixed; inset:0; z-index:60;
+    background:rgba(6,24,42,.9);
+    backdrop-filter: blur(8px);
+    display:flex; align-items:center; justify-content:center;
+    padding:1.25rem;
+    opacity:0; pointer-events:none;
+    transition: opacity .4s;
+  }
+  .overlay.show{opacity:1; pointer-events:auto;}
+
+  .confirm-card{
+    background:var(--paper);
+    color:var(--ink);
+    border:2.5px solid var(--ink);
+    border-radius:20px;
+    padding:2rem 1.4rem;
+    text-align:center;
+    box-shadow: 8px 8px 0 var(--glow-hot), 0 0 40px rgba(255,210,122,.4);
+    width:100%; max-width:360px;
+    transform: scale(.7) rotate(-3deg);
+    transition: transform .55s cubic-bezier(.34,1.56,.64,1);
+    position:relative;
+  }
+  .overlay.show .confirm-card{transform: scale(1) rotate(-1deg);}
+
+  .check-badge{
+    width:72px; height:72px; border-radius:99px;
+    background:var(--glow); color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    margin:0 auto .9rem;
+    border:2.5px solid var(--ink);
+    box-shadow:4px 4px 0 var(--ink), 0 0 22px rgba(255,210,122,.7);
+    font-family:'Big Shoulders Stencil Display'; font-weight:900; font-size:2.4rem; line-height:1;
+  }
+  .confirm-card h3{
+    font-family:'Fraunces', serif; font-weight:900; font-size:1.75rem;
+    margin-bottom:.3rem; line-height:1;
+  }
+  .confirm-card h3 em{font-style:italic; color:var(--glow-hot);}
+  .confirm-card p{font-size:.9rem; margin-bottom:1.1rem; color:rgba(6,17,27,.72);}
+  .confirm-card .close{
+    font-family:'Fraunces'; font-weight:700; font-style:italic;
+    background:transparent; border:2px solid var(--ink); border-radius:99px;
+    padding:.6rem 1.2rem; cursor:pointer; font-size:.9rem;
+    min-height:44px;
+    transition:background .2s, color .2s;
+  }
+  .confetti{position:absolute; pointer-events:none;}
+
+  /* intro anim */
+  .fade-up{opacity:0; transform: translateY(18px);}
+  .in .fade-up{opacity:1; transform:none; transition: opacity .8s ease, transform .8s cubic-bezier(.2,.7,.3,1);}
+  .in .d1{transition-delay:.04s}
+  .in .d2{transition-delay:.16s}
+  .in .d3{transition-delay:.28s}
+  .in .d4{transition-delay:.40s}
+  .in .d5{transition-delay:.52s}
+
+  .corner-mark{
+    position:fixed; bottom:calc(10px + var(--safe-b)); right:14px; z-index:3;
+    font-family:'Caveat', cursive; font-weight:700; color:var(--glow);
+    font-size:.95rem; opacity:.55; transform:rotate(-3deg);
+    pointer-events:none;
+  }
+
+  /* ========= TABLET (>=600px) ========= */
+  @media (min-width: 600px){
+    main{
+      padding: calc(2rem + var(--safe-t)) 2rem calc(3rem + var(--safe-b));
+      gap:2.5rem;
+      max-width:720px; margin:0 auto;
+    }
+    .form-card{padding:2.3rem 1.8rem 1.8rem;}
+    .form-card h2{font-size:1.75rem; margin-bottom:.35rem;}
+    .form-card .subtitle{font-size:.9rem; margin-bottom:1.5rem;}
+    .field{margin-bottom:1.2rem;}
+    fieldset.radio-field{margin-bottom:1.4rem;}
+    h1.title img{width:min(78%, 560px);}
+    .datas img{width:min(88%, 620px);}
+    .btn-submit{font-size:1.2rem;}
+  }
+
+  /* ========= DESKTOP (>=980px) ========= */
+  @media (min-width: 980px){
+    main{
+      display:grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap:3.5rem;
+      align-items:center;
+      padding: 2.4rem clamp(1.5rem, 5vw, 4rem) 5rem;
+      max-width:1400px;
+    }
+    h1.title{ margin-top: -35rem; }
+    .datas{ margin-top: -11.5rem; }
+    h1.title img{width:min(95%, 640px);}
+    .form-card{
+      padding:2.4rem 2.4rem 2rem;
+      transform:rotate(-1deg);
+      box-shadow: 6px 6px 0 var(--ink), 0 0 60px rgba(255,210,122,.18);
+    }
+    .form-card:hover{transform:rotate(-.4deg) translateY(-2px);}
+    .form-card h2{font-size:2rem;}
+    .sticker{font-size:1.05rem; padding:.55rem 1rem;}
+    .sticker-radio{flex:0 1 auto;}
+    .btn-submit{font-size:1.25rem;}
+    .btn-submit:hover{
+      transform: translate(-3px,-3px) rotate(-1deg);
+      background:var(--glow); color:var(--ink);
+      box-shadow: 9px 9px 0 var(--ink), 0 0 44px rgba(255,210,122,.8);
+    }
+    .sticker-radio:hover{transform:translate(-1px,-1px); box-shadow:4px 4px 0 var(--ink);}
+    .fly.f3{display:block !important;}
+    .fly.f4{display:block !important;}
+  }
+
+  /* reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    *,*::before,*::after{
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .1ms !important;
+    }
+    .fly{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<!-- scene -->
+<div class="scene" aria-hidden="true">
+  <div class="stars" id="stars"></div>
+
+  <div class="lights">
+    <svg id="lights-svg" viewBox="0 0 1200 160" preserveAspectRatio="none">
+      <path id="wire-1" d="M0,40 Q 300,140 600,50 T 1200,45" fill="none" stroke="rgba(244,235,214,.5)" stroke-width="1.4"/>
+      <path id="wire-2" d="M0,80 Q 300,180 600,90 T 1200,95" fill="none" stroke="rgba(244,235,214,.3)" stroke-width="1.1"/>
+    </svg>
+    <div id="bulbs" style="position:absolute; inset:0;"></div>
+  </div>
+
+  <img class="scenery" src="scenery.png" alt="" aria-hidden="true" />
+
+</div>
+
+<div class="grain"></div>
+<div class="fly f1"></div>
+<div class="fly f2"></div>
+<div class="fly f3" style="display:none"></div>
+<div class="fly f4" style="display:none"></div>
+
+<main id="root">
+  <section class="hero">
+
+    <h1 class="title fade-up d2">
+      <img src="logo.png" alt="QUIC Festival 2026" />
+    </h1>
+
+    <div class="datas fade-up d3">
+      <img src="datas.png" alt="8 e 9 de Maio · Monsanto Open Air, Lisboa · Bilhetes disponíveis na FNAC, Wortek, El Corte Inglês e em Ticketline.pt" />
+    </div>
+
+  </section>
+
+  <section class="form-wrap fade-up d3">
+    <form class="form-card" id="rsvp" novalidate>
+<h2>Confirma a tua <em>presença</em>.</h2>
+      <p class="subtitle">Precisamos só de alguns dados para te pôr na lista.</p>
+
+      <div class="field">
+        <label for="nome">Nome completo <span class="req">*</span></label>
+        <input id="nome" name="nome" type="text" autocomplete="name" autocapitalize="words" required />
+      </div>
+
+      <div class="field">
+        <label for="tel">Telefone <span class="req">*</span></label>
+        <input id="tel" name="tel" type="tel" inputmode="tel" autocomplete="tel" required placeholder="9XXXXXXXX" pattern="^(\+351\s?)?9\d{8}$" />
+      </div>
+
+      <div class="field">
+        <label for="email">Email <span class="req">*</span></label>
+        <input id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" required placeholder="tu@exemplo.pt" />
+      </div>
+
+      <fieldset class="radio-field">
+        <legend>Levas acompanhante? <span class="req">*</span></legend>
+        <div class="radio-group" role="radiogroup">
+          <label class="sticker-radio yes">
+            <input type="radio" name="acompanhante" value="sim" required />
+            <span>SIM</span>
+          </label>
+          <label class="sticker-radio no">
+            <input type="radio" name="acompanhante" value="nao" required />
+            <span>NÃO</span>
+          </label>
+        </div>
+      </fieldset>
+
+      <div class="companion" id="companion" aria-hidden="true">
+        <div class="field">
+          <label for="c-nome">Nome do acompanhante <span class="req">*</span></label>
+          <input id="c-nome" name="companion_nome" type="text" autocapitalize="words" />
+        </div>
+
+        <div class="field">
+          <label for="c-tel">Telefone do acompanhante <span class="req">*</span></label>
+          <input id="c-tel" name="companion_tel" type="tel" inputmode="tel" placeholder="9XXXXXXXX" pattern="^(\+351\s?)?9\d{8}$" />
+        </div>
+      </div>
+
+      <button type="submit" class="btn-submit">
+        <span>CONFIRMAR PRESENÇA</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>
+        </svg>
+      </button>
+
+      <p class="fine-print">Ao confirmar, aceitas receber info do festival por email.</p>
+    </form>
+  </section>
+</main>
+
+<!-- confirmation overlay -->
+<div class="overlay" id="overlay" role="dialog" aria-hidden="true" aria-labelledby="confirm-title">
+  <div class="confirm-card">
+    <div class="check-badge">✓</div>
+    <h3 id="confirm-title">Tás <em>dentro.</em></h3>
+    <p>Enviámos um email com o teu QR. Guarda. Trás no dia.</p>
+    <button class="close" type="button" id="closeOverlay">Voltar ao site</button>
+    <svg class="confetti" style="top:-14px; left:-12px; width:40px; transform:rotate(-18deg);" viewBox="0 0 40 40"><path d="M20 4 L24 16 L36 20 L24 24 L20 36 L16 24 L4 20 L16 16 Z" fill="#FFD27A" stroke="#06111B" stroke-width="2"/></svg>
+    <svg class="confetti" style="bottom:-16px; right:-10px; width:36px; transform:rotate(16deg);" viewBox="0 0 40 40"><circle cx="20" cy="20" r="16" fill="#F2A93C" stroke="#06111B" stroke-width="2"/></svg>
+  </div>
+</div>
+
+<div class="corner-mark">mockup · v0</div>
+
+<script>
+  // stars
+  (function(){
+    const el = document.getElementById('stars');
+    const mobile = window.innerWidth < 600;
+    const N = mobile ? 40 : 80;
+    for(let i=0;i<N;i++){
+      const s = document.createElement('span');
+      s.className='s';
+      s.style.left = (Math.random()*100)+'%';
+      s.style.top  = (Math.random()*55)+'%';
+      s.style.animationDelay = (Math.random()*3)+'s';
+      s.style.opacity = 0.4 + Math.random()*0.6;
+      const sc = 0.6 + Math.random()*1.4;
+      s.style.transform = `scale(${sc})`;
+      el.appendChild(s);
+    }
+  })();
+
+  // bulbs along the string lights (sample actual SVG paths so they stay on the wire)
+  (function(){
+    const wrap = document.getElementById('bulbs');
+    const svg  = document.getElementById('lights-svg');
+    const VBW = 1200, VBH = 160; // matches svg viewBox
+
+    const renderBulbs = () => {
+      wrap.innerHTML = '';
+      const mobile = window.innerWidth < 600;
+      const wires = [
+        { path: document.getElementById('wire-1'), count: mobile ? 12 : 22, size: 8 },
+        { path: document.getElementById('wire-2'), count: mobile ? 10 : 20, size: 7 },
+      ];
+      wires.forEach(({path, count, size}) => {
+        const len = path.getTotalLength();
+        for (let i = 0; i < count; i++){
+          const t = i / (count - 1);
+          const p = path.getPointAtLength(t * len);
+          const b = document.createElement('span');
+          b.className = 'bulb';
+          b.style.left = (p.x / VBW * 100) + '%';
+          b.style.top  = (p.y / VBH * 100) + '%';
+          b.style.width  = size + 'px';
+          b.style.height = size + 'px';
+          b.style.animationDelay = (Math.random() * 2.6) + 's';
+          wrap.appendChild(b);
+        }
+      });
+    };
+
+    renderBulbs();
+    let t; window.addEventListener('resize', () => {
+      clearTimeout(t); t = setTimeout(renderBulbs, 120);
+    });
+  })();
+
+  // entrance anim
+  requestAnimationFrame(() => document.getElementById('root').classList.add('in'));
+
+  // companion reveal
+  const companion = document.getElementById('companion');
+  const cNome = document.getElementById('c-nome');
+  const cTel  = document.getElementById('c-tel');
+  document.querySelectorAll('input[name="acompanhante"]').forEach(r => {
+    r.addEventListener('change', () => {
+      const bring = r.value === 'sim' && r.checked;
+      companion.classList.toggle('open', bring);
+      companion.setAttribute('aria-hidden', bring ? 'false' : 'true');
+      cNome.required = bring;
+      cTel.required  = bring;
+      if (!bring) { cNome.value = ''; cTel.value = ''; }
+    });
+  });
+
+  // submit
+  const form = document.getElementById('rsvp');
+  const overlay = document.getElementById('overlay');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden','false');
+  });
+  document.getElementById('closeOverlay').addEventListener('click', () => {
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden','true');
+    form.reset();
+    document.getElementById('companion').classList.remove('open');
+  });
+</script>
+</body>
+</html>
