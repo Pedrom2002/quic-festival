@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { rsvpSchema } from "@/lib/validators";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { generateQrDataUrl } from "@/lib/qr";
 import { sendRsvpEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -69,11 +68,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const qr = await generateQrDataUrl(inserted.token);
     await sendRsvpEmail({
       to: data.email,
       name: data.name,
-      qrDataUrl: qr,
       token: inserted.token,
     });
 

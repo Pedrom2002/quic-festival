@@ -99,7 +99,7 @@ create policy "admin_update" on public.guests
 
 Seed do primeiro admin (correr uma vez no SQL editor):
 ```sql
-insert into public.admins(email) values ('matilde.carrola@gmail.com');
+insert into public.admins(email) values ('pedro.marques@quic.pt'), ('rafael.amado@quic.pt');
 ```
 
 ## Scaffolding (comandos iniciais)

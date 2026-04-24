@@ -2,7 +2,6 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
-import { generateQrDataUrl } from "@/lib/qr";
 import { sendRsvpEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
@@ -49,11 +48,9 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const qr = await generateQrDataUrl(guest.token);
     await sendRsvpEmail({
       to: guest.email,
       name: guest.name,
-      qrDataUrl: qr,
       token: guest.token,
     });
     await admin

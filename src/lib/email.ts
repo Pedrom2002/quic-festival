@@ -12,7 +12,6 @@ function client(): Resend {
 type SendArgs = {
   to: string;
   name: string;
-  qrDataUrl: string;
   token: string;
 };
 
@@ -22,11 +21,12 @@ function escapeHtml(s: string) {
   );
 }
 
-export async function sendRsvpEmail({ to, name, qrDataUrl, token }: SendArgs) {
+export async function sendRsvpEmail({ to, name, token }: SendArgs) {
   const from = process.env.RESEND_FROM ?? "QUIC Festival <onboarding@resend.dev>";
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const confirmUrl = `${site}/confirmado/${token}`;
   const icsUrl = `${site}/api/ics/${token}`;
+  const qrUrl = `${site}/api/qr/${token}`;
 
   const subject = "Tás dentro · QUIC Festival 2026";
   const preheader = `Mostra o QR à entrada · 8 e 9 Maio · Monsanto Open Air`;
@@ -56,7 +56,7 @@ export async function sendRsvpEmail({ to, name, qrDataUrl, token }: SendArgs) {
           </p>
         </td></tr>
         <tr><td align="center" style="padding:20px 28px;">
-          <img src="${qrDataUrl}" alt="QR de entrada" width="260" height="260" style="display:block;width:260px;height:260px;border:2px solid #06111B;border-radius:16px;background:#F4EBD6;" />
+          <img src="${qrUrl}" alt="QR de entrada" width="260" height="260" style="display:block;width:260px;height:260px;border:2px solid #06111B;border-radius:16px;background:#F4EBD6;" />
         </td></tr>
         <tr><td style="padding:0 28px 8px 28px;" align="center">
           <a href="${confirmUrl}" style="display:inline-block;background:#06111B;color:#FFD27A;text-decoration:none;font-weight:900;letter-spacing:.14em;padding:14px 22px;border-radius:99px;font-size:14px;">ABRIR NO BROWSER</a>

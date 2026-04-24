@@ -23,11 +23,11 @@
 }
 html,
 body {
-  height: 100%;
   width: 100%;
 }
 html {
   -webkit-text-size-adjust: 100%;
+  background: #03111e;
 }
 body {
   font-family: var(--font-dm-sans), system-ui, sans-serif;
@@ -43,6 +43,8 @@ body {
     var(--night-deep) 72%,
     #03111e 100%
   );
+  background-attachment: fixed;
+  background-color: #03111e;
   min-height: 100vh;
   min-height: 100dvh;
 }
@@ -125,6 +127,9 @@ body {
   bottom: 0;
   width: 100%;
   height: auto;
+  max-height: 42vh;
+  object-fit: cover;
+  object-position: bottom;
   display: block;
   pointer-events: none;
   user-select: none;
@@ -191,7 +196,7 @@ body {
   z-index: 2;
   min-height: 100vh;
   min-height: 100dvh;
-  padding: var(--safe-t) 1.15rem calc(2.5rem + var(--safe-b));
+  padding: var(--safe-t) 1.15rem calc(4.5rem + var(--safe-b));
   display: flex;
   flex-direction: column;
   gap: 1rem;
