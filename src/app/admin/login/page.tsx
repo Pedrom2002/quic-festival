@@ -2,21 +2,34 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Turnstile from "@/components/turnstile";
 
 type Mode = "password" | "magic";
+
+const SITEKEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("password");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">(
     "idle",
   );
   const [message, setMessage] = useState<string>("");
 
+  const captchaRequired = !!SITEKEY;
+  const canSubmit =
+    !captchaRequired || captchaToken !== null || status === "sending";
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+    if (captchaRequired && !captchaToken) {
+      setMessage("Resolve o captcha primeiro.");
+      setStatus("error");
+      return;
+    }
     setStatus("sending");
     setMessage("");
 
@@ -24,7 +37,7 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/admin/sign-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, captchaToken }),
       }).catch(() => null);
       const json = (await res?.json().catch(() => ({}))) as {
         error?: string;
@@ -44,6 +57,7 @@ export default function AdminLoginPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         email,
+        captchaToken,
         redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
       }),
     }).catch(() => null);
@@ -123,8 +137,18 @@ export default function AdminLoginPage() {
           </>
         )}
 
+        {SITEKEY && (
+          <div className="mt-4">
+            <Turnstile
+              sitekey={SITEKEY}
+              theme="light"
+              onToken={setCaptchaToken}
+            />
+          </div>
+        )}
+
         <button
-          disabled={status === "sending"}
+          disabled={status === "sending" || !canSubmit}
           className="mt-5 w-full rounded-full border-2 border-[#06111B] bg-[#06111B] text-[#FFD27A] px-4 py-3 font-black tracking-[.14em] disabled:opacity-60"
         >
           {status === "sending"

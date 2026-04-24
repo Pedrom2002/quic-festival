@@ -3,12 +3,14 @@ import { z } from "zod";
 import { supabaseServer } from "@/lib/supabase/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { audit, ipFromHeaders } from "@/lib/audit";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 export const runtime = "nodejs";
 
 const bodySchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   redirectTo: z.string().url().optional(),
+  captchaToken: z.string().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -27,6 +29,14 @@ export async function POST(req: NextRequest) {
   const parsed = bodySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "Pedido inválido." }, { status: 400 });
+  }
+
+  const cap = await verifyTurnstile(parsed.data.captchaToken, ip);
+  if (!cap.ok) {
+    return NextResponse.json(
+      { error: "Captcha inválido. Recarrega a página." },
+      { status: 400 },
+    );
   }
 
   const supa = await supabaseServer();
