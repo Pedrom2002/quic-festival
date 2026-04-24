@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Scene from "@/components/scene";
 import Blobs from "@/components/blobs";
 import RsvpForm from "@/components/rsvp-form";
+import Lineup from "@/components/lineup";
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
@@ -36,6 +37,8 @@ export default function HomePage() {
         <section className="form-wrap fade-up d3">
           <RsvpForm />
         </section>
+
+        <Lineup />
       </main>
 
       <div className="corner-mark">mockup · v0</div>

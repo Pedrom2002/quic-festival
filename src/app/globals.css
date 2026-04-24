@@ -514,6 +514,77 @@ fieldset.radio-field legend .req {
   transition-delay: 0.52s;
 }
 
+/* ========= LINEUP ========= */
+.lineup {
+  position: relative;
+  z-index: 2;
+  margin: 2rem 0 1rem;
+  padding: 1rem 0;
+}
+.lineup-heading {
+  text-align: center;
+  margin-bottom: 1.4rem;
+}
+.lineup-heading h2 {
+  font-family: var(--font-fraunces), serif;
+  font-weight: 900;
+  font-size: clamp(1.8rem, 5vw, 2.6rem);
+  letter-spacing: -0.02em;
+  color: var(--paper);
+  line-height: 1;
+}
+.lineup-heading h2 em {
+  font-style: italic;
+  color: var(--glow);
+}
+.lineup-heading p {
+  font-family: var(--font-caveat), cursive;
+  color: var(--glow);
+  opacity: 0.8;
+  margin-top: 0.3rem;
+}
+.lineup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.9rem;
+  padding: 0 0.2rem;
+}
+.lineup-sticker {
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  padding: 1.1rem 0.8rem;
+  text-align: center;
+  font-family: var(--font-stencil), sans-serif;
+  font-weight: 900;
+  font-size: clamp(0.9rem, 3vw, 1.15rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: default;
+  transition:
+    transform 0.25s cubic-bezier(0.2, 0.7, 0.3, 1.4),
+    box-shadow 0.25s;
+  user-select: none;
+}
+.lineup-sticker:hover {
+  box-shadow: 5px 5px 0 var(--ink);
+}
+@media (min-width: 600px) {
+  .lineup-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.1rem;
+  }
+}
+@media (min-width: 980px) {
+  .lineup-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .lineup {
+    grid-column: 1 / -1;
+    margin: 4rem 0 2rem;
+  }
+}
+
 .corner-mark {
   position: fixed;
   bottom: calc(10px + var(--safe-b));
@@ -573,7 +644,7 @@ fieldset.radio-field legend .req {
     max-width: 1400px;
   }
   h1.title {
-    margin-top: -35rem;
+    margin-top: -26rem;
   }
   .datas {
     margin-top: -11.5rem;
