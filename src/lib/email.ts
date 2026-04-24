@@ -30,7 +30,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
   const logoUrl = `${site}/logo.png`;
 
   const subject = "Tás dentro · QUIC Festival 2026";
-  const preheader = "Mostra o QR à entrada · 8 e 9 Maio · Monsanto Open Air, Lisboa";
+  const preheader = "Mostra o QR à entrada · Monsanto Open Air, Lisboa";
   const safeName = escapeHtml(name);
 
   const html = `<!doctype html>
@@ -58,16 +58,9 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
           <img src="${logoUrl}" alt="QUIC Festival 2026" width="220" style="display:block;width:220px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
         </td></tr>
 
-        <!-- DATE STRIP -->
+        <!-- DATAS (mesma img do frontend) -->
         <tr><td align="center" style="padding:0 0 18px 0;">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1;font-weight:900;color:#FFD27A;padding:0 14px 0 0;">08</td>
-              <td style="font-size:28px;line-height:1;color:#F2A93C;padding:0 10px;font-weight:700;">·</td>
-              <td style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1;font-weight:900;color:#FFD27A;padding:0 0 0 14px;">09</td>
-            </tr>
-          </table>
-          <p style="margin:6px 0 0 0;font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:#F4EBD6;opacity:.82;">Maio · 2026</p>
+          <img src="${site}/datas.png" alt="8 e 9 de Maio · Monsanto Open Air, Lisboa · Bilhetes em FNAC, Wortek, El Corte Inglês e Ticketline.pt" width="520" style="display:block;width:100%;max-width:520px;height:auto;border:0;outline:none;text-decoration:none;" />
         </td></tr>
       </table>
 
@@ -115,19 +108,15 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
           <div style="height:2px;background:#06111B;opacity:.12;border-radius:2px;"></div>
         </td></tr>
 
-        <!-- INFO 3 COLS -->
+        <!-- INFO 2 COLS -->
         <tr><td style="padding:22px 30px 26px 30px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <tr>
-              <td width="33%" valign="top" style="padding-right:8px;">
-                <p style="margin:0;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;font-weight:700;">Data</p>
-                <p style="margin:4px 0 0 0;font-family:Georgia,serif;font-size:17px;font-weight:900;color:#06111B;line-height:1.15;">8 · 9 Mai</p>
-              </td>
-              <td width="33%" valign="top" style="padding:0 6px;">
+              <td width="50%" valign="top" style="padding-right:8px;">
                 <p style="margin:0;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;font-weight:700;">Local</p>
                 <p style="margin:4px 0 0 0;font-family:Georgia,serif;font-size:17px;font-weight:900;color:#06111B;line-height:1.15;">Monsanto<br/>Open Air</p>
               </td>
-              <td width="33%" valign="top" style="padding-left:8px;">
+              <td width="50%" valign="top" style="padding-left:8px;">
                 <p style="margin:0;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;font-weight:700;">Portas</p>
                 <p style="margin:4px 0 0 0;font-family:Georgia,serif;font-size:17px;font-weight:900;color:#06111B;line-height:1.15;">17:00</p>
               </td>
@@ -160,7 +149,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
 Olá ${name},
 
 O QR em anexo é a tua entrada no Monsanto Open Air, Lisboa.
-Datas: 8 e 9 de Maio · Portas às 17:00.
+Portas às 17:00.
 
 Abrir no browser: ${confirmUrl}
 Adicionar ao calendário: ${icsUrl}
