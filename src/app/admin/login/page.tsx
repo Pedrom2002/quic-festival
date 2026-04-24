@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { supabaseBrowser } from "@/lib/supabase/client";
 
 type Mode = "password" | "magic";
 
@@ -20,16 +19,19 @@ export default function AdminLoginPage() {
     e.preventDefault();
     setStatus("sending");
     setMessage("");
-    const supabase = supabaseBrowser();
 
     if (mode === "password") {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) {
+      const res = await fetch("/api/admin/sign-in", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      }).catch(() => null);
+      const json = (await res?.json().catch(() => ({}))) as {
+        error?: string;
+      } | null;
+      if (!res?.ok) {
         setStatus("error");
-        setMessage(error.message);
+        setMessage(json?.error ?? "Erro de rede.");
         return;
       }
       router.push("/admin");
@@ -37,19 +39,24 @@ export default function AdminLoginPage() {
       return;
     }
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/admin`,
-      },
-    });
-    if (error) {
+    const res = await fetch("/api/admin/sign-in/otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
+      }),
+    }).catch(() => null);
+    const json = (await res?.json().catch(() => ({}))) as {
+      error?: string;
+    } | null;
+    if (!res?.ok) {
       setStatus("error");
-      setMessage(error.message);
-    } else {
-      setStatus("sent");
-      setMessage("Vê o teu email e clica no link.");
+      setMessage(json?.error ?? "Erro a enviar magic link.");
+      return;
     }
+    setStatus("sent");
+    setMessage("Se o email existir, recebes um link em breve.");
   }
 
   return (

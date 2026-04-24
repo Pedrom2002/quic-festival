@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { toCsv } from "@/lib/csv";
+import { audit, ipFromHeaders } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const supa = await supabaseServer();
   const {
     data: { user },
@@ -64,6 +65,13 @@ export async function GET() {
 
   const csv = toCsv(rows, headers);
   const filename = `quic-convidados-${new Date().toISOString().slice(0, 10)}.csv`;
+
+  await audit({
+    action: "admin.export",
+    actorEmail: user.email,
+    ip: ipFromHeaders(req.headers),
+    meta: { rows: rows.length },
+  });
 
   return new NextResponse(csv, {
     status: 200,

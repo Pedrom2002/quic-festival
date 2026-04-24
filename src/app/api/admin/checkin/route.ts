@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { audit, ipFromHeaders } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -40,6 +41,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { id, token, checked_in } = parsed.data;
+  const ip = ipFromHeaders(req.headers);
 
   const lookup = admin.from("guests").select("id,name,companion_count,checked_in_at");
   const { data: guest } = id
@@ -47,6 +49,12 @@ export async function PATCH(req: NextRequest) {
     : await lookup.eq("token", token!).maybeSingle();
 
   if (!guest) {
+    await audit({
+      action: "admin.checkin.not_found",
+      actorEmail: user.email,
+      ip,
+      meta: { token: token ?? null, id: id ?? null },
+    });
     return NextResponse.json({ error: "Convidado não encontrado." }, { status: 404 });
   }
 
@@ -58,9 +66,20 @@ export async function PATCH(req: NextRequest) {
     .eq("id", guest.id);
 
   if (error) {
-    console.error("[checkin]", error);
+    console.error("[checkin]", error.code ?? "unknown");
     return NextResponse.json({ error: "Erro a atualizar." }, { status: 500 });
   }
+
+  await audit({
+    action: !checked_in
+      ? "admin.checkin.uncheck"
+      : wasAlreadyCheckedIn
+        ? "admin.checkin.duplicate"
+        : "admin.checkin.ok",
+    actorEmail: user.email,
+    targetId: guest.id,
+    ip,
+  });
 
   return NextResponse.json({
     ok: true,

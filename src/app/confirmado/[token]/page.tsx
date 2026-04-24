@@ -1,9 +1,14 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateQrDataUrl } from "@/lib/qr";
 import ConfirmadoActions from "@/components/confirmado-actions";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false, nocache: true, noarchive: true },
+};
 
 export default async function ConfirmadoPage({
   params,

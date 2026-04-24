@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendRsvpEmail } from "@/lib/email";
+import { audit, ipFromHeaders } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -47,6 +48,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Convidado não existe." }, { status: 404 });
   }
 
+  const ip = ipFromHeaders(req.headers);
+
   try {
     await sendRsvpEmail({
       to: guest.email,
@@ -58,12 +61,25 @@ export async function POST(req: NextRequest) {
       .update({ email_sent_at: new Date().toISOString() })
       .eq("id", guest.id);
   } catch (e) {
-    console.error("[resend-email]", e);
+    console.error("[resend-email]", e instanceof Error ? e.message : "fail");
+    await audit({
+      action: "admin.resend_email.fail",
+      actorEmail: user.email,
+      targetId: guest.id,
+      ip,
+    });
     return NextResponse.json(
       { error: "Falha a reenviar email." },
       { status: 502 },
     );
   }
+
+  await audit({
+    action: "admin.resend_email.ok",
+    actorEmail: user.email,
+    targetId: guest.id,
+    ip,
+  });
 
   return NextResponse.json({ ok: true });
 }
