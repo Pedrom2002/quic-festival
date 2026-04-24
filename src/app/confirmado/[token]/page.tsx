@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateQrDataUrl } from "@/lib/qr";
+import ConfirmadoActions from "@/components/confirmado-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,12 @@ export default async function ConfirmadoPage({
             Acompanhante: {guest.companion_names.join(", ")}
           </p>
         )}
+
+        <ConfirmadoActions qrDataUrl={qr} token={guest.token} name={guest.name} />
+
+        <p className="text-[11px] opacity-60 mt-5 leading-relaxed">
+          8 e 9 de Maio · Monsanto Open Air, Lisboa
+        </p>
       </div>
     </main>
   );
