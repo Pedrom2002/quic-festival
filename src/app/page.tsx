@@ -30,13 +30,19 @@ export default function HomePage() {
               alt="8 e 9 de Maio · Monsanto Open Air, Lisboa · Bilhetes em FNAC, Wortek, El Corte Inglês e Ticketline.pt"
             />
           </div>
+
+          <div className="lineup-slot lineup-desktop-only">
+            <Lineup />
+          </div>
         </section>
 
         <section className="form-wrap fade-up d3">
           <RsvpForm />
         </section>
 
-        <Lineup />
+        <div className="lineup-slot lineup-mobile-only">
+          <Lineup />
+        </div>
       </main>
 
       <div className="corner-mark">mockup · v0</div>
