@@ -40,19 +40,35 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { id, token, checked_in } = parsed.data;
-  const update = {
-    checked_in_at: checked_in ? new Date().toISOString() : null,
-  };
 
-  const query = admin.from("guests").update(update);
-  const { error } = id
-    ? await query.eq("id", id)
-    : await query.eq("token", token!);
+  const lookup = admin.from("guests").select("id,name,companion_count,checked_in_at");
+  const { data: guest } = id
+    ? await lookup.eq("id", id).maybeSingle()
+    : await lookup.eq("token", token!).maybeSingle();
+
+  if (!guest) {
+    return NextResponse.json({ error: "Convidado não encontrado." }, { status: 404 });
+  }
+
+  const wasAlreadyCheckedIn = !!guest.checked_in_at;
+
+  const { error } = await admin
+    .from("guests")
+    .update({ checked_in_at: checked_in ? new Date().toISOString() : null })
+    .eq("id", guest.id);
 
   if (error) {
     console.error("[checkin]", error);
     return NextResponse.json({ error: "Erro a atualizar." }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({
+    ok: true,
+    guest: {
+      id: guest.id,
+      name: guest.name,
+      companion_count: guest.companion_count,
+    },
+    was_already_checked_in: wasAlreadyCheckedIn && checked_in,
+  });
 }
