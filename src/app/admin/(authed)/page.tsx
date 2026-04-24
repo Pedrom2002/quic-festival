@@ -41,6 +41,12 @@ export default async function AdminPage() {
             Scan QR
           </a>
           <a
+            href="/admin/audit"
+            className="rounded-full border-2 border-white/25 px-4 py-2 text-xs tracking-[.18em] uppercase hover:border-[#FFD27A] hover:text-[#FFD27A] transition"
+          >
+            Audit
+          </a>
+          <a
             href="/api/admin/export"
             className="rounded-full border-2 border-[#FFD27A] text-[#FFD27A] px-4 py-2 text-xs tracking-[.18em] uppercase hover:bg-[#FFD27A] hover:text-[#06111B] transition"
           >
