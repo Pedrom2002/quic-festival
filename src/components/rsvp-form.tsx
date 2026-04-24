@@ -1,0 +1,184 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { rsvpSchema, type RsvpInput } from "@/lib/validators";
+
+export default function RsvpForm() {
+  const router = useRouter();
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<RsvpInput>({
+    resolver: zodResolver(rsvpSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      acompanhante: undefined,
+      companion_nome: "",
+      companion_tel: "",
+    },
+    mode: "onBlur",
+  });
+
+  const acompanhante = watch("acompanhante");
+  const bringsCompanion = acompanhante === "sim";
+
+  async function onSubmit(values: RsvpInput) {
+    setServerError(null);
+    try {
+      const res = await fetch("/api/rsvp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(values),
+      });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setServerError(json?.error ?? "Algo correu mal. Tenta novamente.");
+        return;
+      }
+      router.push(`/confirmado/${json.token}`);
+    } catch {
+      setServerError("Sem ligação. Verifica a internet e tenta outra vez.");
+    }
+  }
+
+  return (
+    <form className="form-card" noValidate onSubmit={handleSubmit(onSubmit)}>
+      <h2>
+        Confirma a tua <em>presença</em>.
+      </h2>
+      <p className="subtitle">
+        Precisamos só de alguns dados para te pôr na lista.
+      </p>
+
+      <div className="field">
+        <label htmlFor="nome">
+          Nome completo <span className="req">*</span>
+        </label>
+        <input
+          id="nome"
+          type="text"
+          autoComplete="name"
+          autoCapitalize="words"
+          {...register("name")}
+        />
+        {errors.name && <p className="field-error">{errors.name.message}</p>}
+      </div>
+
+      <div className="field">
+        <label htmlFor="tel">
+          Telefone <span className="req">*</span>
+        </label>
+        <input
+          id="tel"
+          type="tel"
+          inputMode="tel"
+          autoComplete="tel"
+          placeholder="9XXXXXXXX"
+          {...register("phone")}
+        />
+        {errors.phone && <p className="field-error">{errors.phone.message}</p>}
+      </div>
+
+      <div className="field">
+        <label htmlFor="email">
+          Email <span className="req">*</span>
+        </label>
+        <input
+          id="email"
+          type="email"
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="off"
+          placeholder="tu@exemplo.pt"
+          {...register("email")}
+        />
+        {errors.email && <p className="field-error">{errors.email.message}</p>}
+      </div>
+
+      <fieldset className="radio-field">
+        <legend>
+          Levas acompanhante? <span className="req">*</span>
+        </legend>
+        <div className="radio-group" role="radiogroup">
+          <label className="sticker-radio yes">
+            <input type="radio" value="sim" {...register("acompanhante")} />
+            <span>SIM</span>
+          </label>
+          <label className="sticker-radio no">
+            <input type="radio" value="nao" {...register("acompanhante")} />
+            <span>NÃO</span>
+          </label>
+        </div>
+        {errors.acompanhante && (
+          <p className="field-error">{errors.acompanhante.message}</p>
+        )}
+      </fieldset>
+
+      <div
+        className={`companion${bringsCompanion ? " open" : ""}`}
+        aria-hidden={!bringsCompanion}
+      >
+        <div className="field">
+          <label htmlFor="c-nome">
+            Nome do acompanhante <span className="req">*</span>
+          </label>
+          <input
+            id="c-nome"
+            type="text"
+            autoCapitalize="words"
+            {...register("companion_nome")}
+          />
+          {errors.companion_nome && (
+            <p className="field-error">{errors.companion_nome.message}</p>
+          )}
+        </div>
+
+        <div className="field">
+          <label htmlFor="c-tel">
+            Telefone do acompanhante <span className="req">*</span>
+          </label>
+          <input
+            id="c-tel"
+            type="tel"
+            inputMode="tel"
+            placeholder="9XXXXXXXX"
+            {...register("companion_tel")}
+          />
+          {errors.companion_tel && (
+            <p className="field-error">{errors.companion_tel.message}</p>
+          )}
+        </div>
+      </div>
+
+      <button type="submit" className="btn-submit" disabled={isSubmitting}>
+        <span>{isSubmitting ? "A CONFIRMAR…" : "CONFIRMAR PRESENÇA"}</span>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M5 12h14" />
+          <path d="M13 6l6 6-6 6" />
+        </svg>
+      </button>
+
+      {serverError && <div className="form-error-banner">{serverError}</div>}
+
+      <p className="fine-print">
+        Ao confirmar, aceitas receber info do festival por email.
+      </p>
+    </form>
+  );
+}
