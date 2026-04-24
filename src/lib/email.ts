@@ -27,9 +27,10 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
   const confirmUrl = `${site}/confirmado/${token}`;
   const icsUrl = `${site}/api/ics/${token}`;
   const qrUrl = `${site}/api/qr/${token}`;
+  const logoUrl = `${site}/logo.png`;
 
   const subject = "Tás dentro · QUIC Festival 2026";
-  const preheader = `Mostra o QR à entrada · 8 e 9 Maio · Monsanto Open Air`;
+  const preheader = "Mostra o QR à entrada · 8 e 9 Maio · Monsanto Open Air, Lisboa";
   const safeName = escapeHtml(name);
 
   const html = `<!doctype html>
@@ -37,48 +38,135 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="color-scheme" content="light dark" />
-  <meta name="supported-color-schemes" content="light dark" />
+  <meta name="color-scheme" content="light" />
+  <meta name="supported-color-schemes" content="light" />
   <title>${subject}</title>
 </head>
-<body style="margin:0;padding:0;background:#06182A;font-family:Helvetica,Arial,sans-serif;color:#F4EBD6;">
-  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px;">
+<body style="margin:0;padding:0;background:#06182A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#F4EBD6;">
+
+  <!-- preheader -->
+  <div style="display:none!important;max-height:0;overflow:hidden;opacity:0;color:transparent;font-size:1px;line-height:1px;mso-hide:all;">
     ${preheader}
   </div>
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#06182A;">
-    <tr><td align="center" style="padding:32px 16px;">
-      <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="max-width:520px;background:#F4EBD6;color:#06111B;border-radius:20px;border:2px solid #06111B;">
-        <tr><td style="padding:28px 28px 8px 28px;">
-          <p style="margin:0;font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;">QUIC Festival · 2026</p>
-          <h1 style="margin:8px 0 0 0;font-size:28px;line-height:1.05;font-weight:900;color:#06111B;">Olá ${safeName}, tás <em style="color:#F2A93C;font-style:italic;">dentro</em>.</h1>
-          <p style="margin:12px 0 0 0;font-size:15px;line-height:1.5;color:#3a4b5a;">
-            Guarda este email. O QR abaixo é a tua entrada no dia <strong style="color:#06111B;">8 e 9 de Maio</strong> em Monsanto Open Air, Lisboa.
-          </p>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:#06182A;">
+    <tr><td align="center" style="padding:28px 14px 40px 14px;">
+
+      <!-- HERO -->
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
+        <tr><td align="center" style="padding:12px 0 20px 0;">
+          <img src="${logoUrl}" alt="QUIC Festival 2026" width="220" style="display:block;width:220px;max-width:60%;height:auto;border:0;outline:none;text-decoration:none;" />
         </td></tr>
-        <tr><td align="center" style="padding:20px 28px;">
-          <img src="${qrUrl}" alt="QR de entrada" width="260" height="260" style="display:block;width:260px;height:260px;border:2px solid #06111B;border-radius:16px;background:#F4EBD6;" />
-        </td></tr>
-        <tr><td style="padding:0 28px 8px 28px;" align="center">
-          <a href="${confirmUrl}" style="display:inline-block;background:#06111B;color:#FFD27A;text-decoration:none;font-weight:900;letter-spacing:.14em;padding:14px 22px;border-radius:99px;font-size:14px;">ABRIR NO BROWSER</a>
-        </td></tr>
-        <tr><td style="padding:0 28px 24px 28px;" align="center">
-          <a href="${icsUrl}" style="display:inline-block;color:#06111B;text-decoration:underline;font-size:12px;letter-spacing:.1em;">Adicionar ao calendário</a>
-        </td></tr>
-        <tr><td style="padding:0 28px 28px 28px;font-size:12px;color:#6a7885;line-height:1.5;">
-          Se não foste tu a inscrever-te, ignora este email.<br />
-          Dúvidas: responde a este email.
+
+        <!-- DATE STRIP -->
+        <tr><td align="center" style="padding:0 0 18px 0;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1;font-weight:900;color:#FFD27A;padding:0 14px 0 0;">08</td>
+              <td style="font-size:28px;line-height:1;color:#F2A93C;padding:0 10px;font-weight:700;">·</td>
+              <td style="font-family:Georgia,'Times New Roman',serif;font-size:54px;line-height:1;font-weight:900;color:#FFD27A;padding:0 0 0 14px;">09</td>
+            </tr>
+          </table>
+          <p style="margin:6px 0 0 0;font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:#F4EBD6;opacity:.82;">Maio · 2026</p>
         </td></tr>
       </table>
-      <p style="color:#7c8a97;font-size:11px;margin:16px 0 0 0;letter-spacing:.14em;text-transform:uppercase;">quic.pt</p>
+
+      <!-- PAPER CARD -->
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;background:#F4EBD6;color:#06111B;border-radius:22px;border:2px solid #06111B;">
+        <tr><td style="padding:30px 30px 6px 30px;">
+          <p style="margin:0;font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:#E8613C;font-weight:700;">Confirmação · RSVP</p>
+          <h1 style="margin:10px 0 0 0;font-family:Georgia,'Times New Roman',serif;font-size:32px;line-height:1.05;font-weight:900;color:#06111B;">
+            Olá ${safeName}, tás <em style="color:#F2A93C;font-style:italic;">dentro</em>.
+          </h1>
+          <p style="margin:14px 0 0 0;font-size:15px;line-height:1.55;color:#3a4b5a;">
+            Guarda este email. O QR abaixo é a tua entrada no <strong style="color:#06111B;">Monsanto Open Air, Lisboa</strong>.
+          </p>
+        </td></tr>
+
+        <!-- QR -->
+        <tr><td align="center" style="padding:22px 30px 6px 30px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-radius:18px;background:#FFFFFF;border:2px solid #06111B;">
+            <tr><td style="padding:14px;">
+              <img src="${qrUrl}" alt="QR de entrada QUIC Festival" width="240" height="240" style="display:block;width:240px;height:240px;border:0;outline:none;text-decoration:none;" />
+            </td></tr>
+          </table>
+          <p style="margin:10px 0 0 0;font-family:Georgia,serif;font-style:italic;font-size:13px;color:#6a7885;">entrada pessoal · não partilhes</p>
+        </td></tr>
+
+        <!-- CTA -->
+        <tr><td align="center" style="padding:22px 30px 8px 30px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+            <tr><td align="center" bgcolor="#06111B" style="border-radius:99px;">
+              <a href="${confirmUrl}" style="display:inline-block;background:#06111B;color:#FFD27A;text-decoration:none;font-weight:900;letter-spacing:.14em;padding:14px 26px;border-radius:99px;font-size:14px;border:2px solid #06111B;">
+                ABRIR NO BROWSER
+              </a>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td align="center" style="padding:2px 30px 20px 30px;">
+          <a href="${icsUrl}" style="display:inline-block;color:#06111B;text-decoration:underline;font-size:13px;letter-spacing:.08em;">
+            Adicionar ao calendário (.ics)
+          </a>
+        </td></tr>
+
+        <!-- DIVIDER -->
+        <tr><td style="padding:0 30px;">
+          <div style="height:2px;background:#06111B;opacity:.12;border-radius:2px;"></div>
+        </td></tr>
+
+        <!-- INFO 3 COLS -->
+        <tr><td style="padding:22px 30px 26px 30px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td width="33%" valign="top" style="padding-right:8px;">
+                <p style="margin:0;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;font-weight:700;">Data</p>
+                <p style="margin:4px 0 0 0;font-family:Georgia,serif;font-size:17px;font-weight:900;color:#06111B;line-height:1.15;">8 · 9 Mai</p>
+              </td>
+              <td width="33%" valign="top" style="padding:0 6px;">
+                <p style="margin:0;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;font-weight:700;">Local</p>
+                <p style="margin:4px 0 0 0;font-family:Georgia,serif;font-size:17px;font-weight:900;color:#06111B;line-height:1.15;">Monsanto<br/>Open Air</p>
+              </td>
+              <td width="33%" valign="top" style="padding-left:8px;">
+                <p style="margin:0;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;font-weight:700;">Portas</p>
+                <p style="margin:4px 0 0 0;font-family:Georgia,serif;font-size:17px;font-weight:900;color:#06111B;line-height:1.15;">17:00</p>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:0 30px 26px 30px;font-size:12px;color:#6a7885;line-height:1.55;">
+          Se não foste tu a inscrever-te, ignora este email. Dúvidas → responde diretamente.
+        </td></tr>
+      </table>
+
+      <!-- FOOTER -->
+      <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
+        <tr><td align="center" style="padding:22px 16px 0 16px;">
+          <p style="margin:0;color:#FFD27A;font-size:11px;letter-spacing:.3em;text-transform:uppercase;font-weight:700;">QUIC · Festival</p>
+          <p style="margin:6px 0 0 0;color:#7c8a97;font-size:11px;line-height:1.6;">
+            Lisboa · Portugal · <a href="https://quic.pt" style="color:#7c8a97;text-decoration:underline;">quic.pt</a>
+          </p>
+        </td></tr>
+      </table>
+
     </td></tr>
   </table>
 </body>
 </html>`;
 
-  const text = `QUIC Festival 2026 — estás dentro.
-Olá ${name}, mostra o QR à entrada no dia 8 e 9 de Maio em Monsanto Open Air, Lisboa.
+  const text = `QUIC Festival 2026 — tás dentro.
+
+Olá ${name},
+
+O QR em anexo é a tua entrada no Monsanto Open Air, Lisboa.
+Datas: 8 e 9 de Maio · Portas às 17:00.
+
 Abrir no browser: ${confirmUrl}
 Adicionar ao calendário: ${icsUrl}
+
+Dúvidas? Responde a este email.
+— QUIC Festival
 `;
 
   const { data, error } = await client().emails.send({
