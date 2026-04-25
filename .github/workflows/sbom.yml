@@ -32,7 +32,7 @@ jobs:
       # CycloneDX JSON SBOM, ignora devDeps em produção.
       - name: Generate SBOM (CycloneDX)
         run: npx --yes @cyclonedx/cyclonedx-npm@latest --output-format JSON --output-file sbom.cdx.json --omit dev
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom
           path: sbom.cdx.json
