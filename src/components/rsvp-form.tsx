@@ -157,7 +157,10 @@ export default function RsvpForm() {
 
       <div
         className={`companion${bringsCompanion ? " open" : ""}`}
-        aria-hidden={!bringsCompanion}
+        // `inert` removes the subtree from focus + AT navigation when
+        // collapsed, satisfying axe `aria-hidden-focus`. Drop `aria-hidden`
+        // because `inert` is the focus-aware variant.
+        inert={!bringsCompanion}
       >
         <div className="field">
           <label htmlFor="c-nome">
@@ -167,6 +170,7 @@ export default function RsvpForm() {
             id="c-nome"
             type="text"
             autoCapitalize="words"
+            tabIndex={bringsCompanion ? 0 : -1}
             {...register("companion_nome")}
           />
           {errors.companion_nome && (
@@ -183,6 +187,7 @@ export default function RsvpForm() {
             type="tel"
             inputMode="tel"
             placeholder="9XXXXXXXX"
+            tabIndex={bringsCompanion ? 0 : -1}
             {...register("companion_tel")}
           />
           {errors.companion_tel && (

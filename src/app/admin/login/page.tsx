@@ -82,7 +82,9 @@ export default function AdminLoginPage() {
         className="w-full max-w-sm rounded-2xl border-2 border-[#06111B] bg-[#F4EBD6] text-[#06111B] p-6 shadow-[5px_5px_0_#06111B]"
       >
         <h1 className="font-serif text-2xl font-black leading-tight">
-          Admin <em className="text-[#E8613C] italic">QUIC</em>
+          {/* #B83F1F atinge contraste 4.6:1 sobre #F4EBD6 (axe AA-friendly).
+              `#E8613C` da paleta principal cai para 2.85:1 e falha WCAG AA. */}
+          Admin <em className="text-[#B83F1F] italic">QUIC</em>
         </h1>
         <p className="text-sm opacity-70 mt-1 mb-4">
           Entra no painel de gestão.

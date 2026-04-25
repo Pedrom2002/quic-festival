@@ -97,11 +97,32 @@ describe("RsvpForm", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/Sem ligação/);
   });
 
-  it("acompanhante=sim revela campos extra (aria-hidden=false)", async () => {
+  it("acompanhante=sim revela campos extra (inert removido + tabIndex=0)", async () => {
     const user = userEvent.setup();
     render(<RsvpForm />);
     await user.click(screen.getByLabelText(/^SIM$/));
-    expect(screen.getByLabelText(/Nome do acompanhante/).closest(".companion")?.getAttribute("aria-hidden")).toBe("false");
+    const companion = screen
+      .getByLabelText(/Nome do acompanhante/)
+      .closest(".companion");
+    // `inert` ausente quando bringsCompanion=true.
+    expect(companion?.hasAttribute("inert")).toBe(false);
+    // Inputs reais entram no fluxo de Tab.
+    expect(
+      screen.getByLabelText(/Nome do acompanhante/).getAttribute("tabindex"),
+    ).toBe("0");
+  });
+
+  it("acompanhante=nao mantém companion inert + tabIndex=-1", async () => {
+    const user = userEvent.setup();
+    render(<RsvpForm />);
+    await user.click(screen.getByLabelText(/^NÃO$/));
+    const companion = screen
+      .getByLabelText(/Nome do acompanhante/)
+      .closest(".companion");
+    expect(companion?.hasAttribute("inert")).toBe(true);
+    expect(
+      screen.getByLabelText(/Nome do acompanhante/).getAttribute("tabindex"),
+    ).toBe("-1");
   });
 
   it("validação client-side: nome curto", async () => {
