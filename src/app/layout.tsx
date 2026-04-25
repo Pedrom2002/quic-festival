@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import {
   Big_Shoulders_Stencil,
   Fraunces,
@@ -91,16 +92,22 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="pt-PT"
       className={`${stencil.variable} ${fraunces.variable} ${dmSans.variable} ${caveat.variable} h-full antialiased`}
     >
+      <head>
+        {nonce && <meta name="csp-nonce" content={nonce} />}
+      </head>
       <body className="min-h-full">
         {children}
+        {/* Analytics aceita nonce via prop em prod (suporte oficial). */}
         <Analytics />
       </body>
     </html>

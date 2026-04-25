@@ -42,6 +42,15 @@ function loadScript(): Promise<void> {
     s.src = SCRIPT_SRC;
     s.async = true;
     s.defer = true;
+    // Lê nonce do <meta name="csp-nonce"> emitido pelo layout para autorizar o
+    // script externo sob CSP nonce-based.
+    const meta = document.querySelector<HTMLMetaElement>(
+      'meta[name="csp-nonce"]',
+    );
+    if (meta?.content) {
+      s.nonce = meta.content;
+      s.setAttribute("nonce", meta.content);
+    }
     s.onload = () => resolve();
     s.onerror = () => reject();
     document.head.appendChild(s);
