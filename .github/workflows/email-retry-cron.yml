@@ -1,0 +1,46 @@
+name: email-retry-cron
+
+# External cron driver for /api/cron/email-retry. GitHub Actions schedule
+# minimum is 5 min and has no strict SLA, but for our use case (retry
+# transient Resend failures, candidates from the last hour) this is plenty.
+#
+# Why not Vercel Cron: Hobby plan caps at one cron run per day. Upgrading
+# is cheaper than building a separate scheduler, but until then this keeps
+# the retry loop alive without paying.
+#
+# Required secrets:
+#   - CRON_SECRET             -> matches Vercel env (Authorization: Bearer)
+#   - SMOKE_TARGET_URL        -> defaults to https://quic.pt
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: email-retry
+  cancel-in-progress: false
+
+jobs:
+  retry:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hit cron endpoint
+        env:
+          URL: ${{ secrets.SMOKE_TARGET_URL || 'https://quic.pt' }}
+          SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -e
+          response=$(curl -sS -w "\n%{http_code}" \
+            -H "Authorization: Bearer $SECRET" \
+            "$URL/api/cron/email-retry")
+          status=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          echo "$body"
+          if [ "$status" != "200" ]; then
+            echo "::error::email-retry returned $status"
+            exit 1
+          fi

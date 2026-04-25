@@ -76,7 +76,9 @@ Tokens are HMAC-signed (`<uuid>.<exp>.<sig>`) using `QR_TOKEN_SECRET`. Rotate th
 
 ## Email retry cron
 
-Vercel cron at `*/5 * * * *` hits `GET /api/cron/email-retry`. Authorization via `Authorization: Bearer ${CRON_SECRET}`. Manually trigger via:
+External driver: GitHub Actions workflow `email-retry-cron.yml` runs `*/5 * * * *` and `curl`s `GET /api/cron/email-retry` with `Authorization: Bearer ${CRON_SECRET}`. Vercel Hobby plan caps cron at daily, so the schedule lives in GitHub Actions instead. Upgrade to Vercel Pro and move the schedule into `vercel.json` if the GH Actions delays become noticeable.
+
+Manually trigger via:
 
 ```
 curl -H "x-cron-secret: $CRON_SECRET" https://quic.pt/api/cron/email-retry
