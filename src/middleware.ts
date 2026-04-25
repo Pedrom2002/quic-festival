@@ -25,8 +25,13 @@ function buildCsp(nonce: string): string {
   // style-src: idealmente queríamos remover 'unsafe-inline' por completo, mas
   // Tailwind v4 + Next CSS injection ainda usa <style> sem nonce em alguns
   // caminhos. Damos nonce para browsers que o honram; 'unsafe-inline' fica
-  // como fallback. A remoção total fica para quando Next emitir nonces para
-  // todos os style tags.
+  // como fallback.
+  //
+  // Caminho de saída quando Next emitir nonces consistentemente em styled-jsx:
+  //   1. Auditar o output de `next build` por <style> sem nonce.
+  //   2. Mudar styleSrc para `'self' 'nonce-${nonce}' https://fonts.googleapis.com`.
+  //   3. Verificar visualmente todas as páginas em prod-like build.
+  //   4. E2E em chromium + webkit.
   const styleSrc = `'self' 'nonce-${nonce}' 'unsafe-inline' https://fonts.googleapis.com`;
 
   return [

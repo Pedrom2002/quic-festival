@@ -1,0 +1,79 @@
+name: post-deploy-smoke
+
+# Hits /api/health and /api/qr/<known-uuid> on the production URL after a
+# Vercel deployment marks the deploy ready. Runs as a manually triggered
+# workflow + on a 30-min schedule as a heartbeat.
+#
+# Vercel webhook integration is not used here; instead the schedule + manual
+# button are sufficient guards. Configure SMOKE_TARGET_URL in repo secrets
+# (https://quic.pt by default).
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Override target URL"
+        required: false
+        type: string
+  schedule:
+    - cron: "*/30 * * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve target
+        id: target
+        env:
+          INPUT: ${{ inputs.target }}
+          SECRET: ${{ secrets.SMOKE_TARGET_URL }}
+        run: |
+          target="${INPUT:-${SECRET:-https://quic.pt}}"
+          echo "url=$target" >> "$GITHUB_OUTPUT"
+      - name: Health check
+        env:
+          URL: ${{ steps.target.outputs.url }}
+        run: |
+          set -e
+          status=$(curl -sS -o /tmp/health.json -w "%{http_code}" "$URL/api/health")
+          cat /tmp/health.json
+          if [ "$status" != "200" ]; then
+            echo "::error::/api/health returned $status"
+            exit 1
+          fi
+      - name: Sitemap reachable
+        env:
+          URL: ${{ steps.target.outputs.url }}
+        run: |
+          set -e
+          status=$(curl -sS -o /dev/null -w "%{http_code}" "$URL/sitemap.xml")
+          if [ "$status" != "200" ]; then
+            echo "::error::/sitemap.xml returned $status"
+            exit 1
+          fi
+      - name: Robots reachable
+        env:
+          URL: ${{ steps.target.outputs.url }}
+        run: |
+          set -e
+          status=$(curl -sS -o /dev/null -w "%{http_code}" "$URL/robots.txt")
+          if [ "$status" != "200" ]; then
+            echo "::error::/robots.txt returned $status"
+            exit 1
+          fi
+      - name: Security headers present
+        env:
+          URL: ${{ steps.target.outputs.url }}
+        run: |
+          set -e
+          headers=$(curl -sS -D - -o /dev/null "$URL/")
+          echo "$headers"
+          for h in "strict-transport-security" "x-frame-options" "x-content-type-options" "content-security-policy"; do
+            if ! echo "$headers" | tr 'A-Z' 'a-z' | grep -q "$h"; then
+              echo "::error::missing header: $h"
+              exit 1
+            fi
+          done

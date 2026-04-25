@@ -34,11 +34,25 @@ Defaults are intentionally tight. Raise via `src/lib/limits.ts` and redeploy. No
 
 - [ ] `GET /api/health` returns 200 in production.
 - [ ] At least one real RSVP submitted from a non-admin email; QR received; QR decoded by `/admin/scan` on iPhone + Android.
-- [ ] Vercel envs audited: `UPSTASH_REDIS_REST_*` set (without these, rate-limit fails-closed in prod and returns 503 — see "Rate-limit degraded" below), `RESEND_FROM` uses verified domain, `TURNSTILE_*` set, `QR_TOKEN_SECRET` set (>= 32 random bytes), `CRON_SECRET` set, `SENTRY_DSN` set.
-- [ ] All migrations applied: `0001_init.sql`, `0002_hardening.sql`, `0003_rls_uid_and_columns.sql`, `0004_idempotency_keys.sql`, `0006_audit_retention_cron.sql`. Use `supabase db push` (handled by `db-migrate.yml` on master push if `SUPABASE_*` secrets are set).
-- [ ] `pg_cron` extension enabled on the Supabase project (Dashboard → Database → Extensions). Required by 0006.
-- [ ] `admins.user_id` populated for every admin row (see migration 0003 backfill; verify with `select email, user_id from public.admins`).
-- [ ] `cron.job` shows `audit_log_retention` scheduled (`select * from cron.job;` in Supabase SQL editor).
+- [ ] Vercel envs audited: `UPSTASH_REDIS_REST_*` set (without these, rate-limit fails-closed in prod and returns 503 — see "Rate-limit degraded" below), `RESEND_FROM` uses verified domain, `TURNSTILE_*` set, `QR_TOKEN_SECRET` set (>= 32 random bytes — generate via `openssl rand -base64 48`), `CRON_SECRET` set (>= 32 bytes), `SENTRY_DSN` + `NEXT_PUBLIC_SENTRY_DSN` set.
+- [ ] CI repo secrets set for migrations workflow: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF` (production). For staging: `SUPABASE_STAGING_ACCESS_TOKEN`, `SUPABASE_STAGING_DB_PASSWORD`, `SUPABASE_STAGING_PROJECT_REF`. Configure GitHub Environments → `production` with required reviewers so prod migrations gate on manual approval.
+- [ ] All migrations applied in order: `0001_init.sql`, `0002_hardening.sql`, `0003_rls_uid_and_columns.sql`, `0004_idempotency_keys.sql`, `0005_idempotency_keys_cron.sql`, `0006_audit_retention_cron.sql`. Handled by `db-migrate.yml` on master push (staging → manual approval → production).
+- [ ] `pg_cron` extension enabled on the Supabase project. Dashboard → Database → Extensions → search "pg_cron" → toggle ON. Required by 0005 + 0006.
+- [ ] `admins.user_id` populated for every admin row. Migration 0003 backfills via `lower(email)` match; verify and remediate manually:
+      ```sql
+      -- Audit
+      select email, user_id from public.admins;
+      -- Remediation if any user_id IS NULL (replace email):
+      update public.admins a
+      set user_id = u.id
+      from auth.users u
+      where a.user_id is null and lower(a.email) = lower(u.email);
+      ```
+- [ ] `cron.job` shows BOTH cron jobs scheduled:
+      ```sql
+      select jobname, schedule, active from cron.job
+       where jobname in ('audit_log_retention', 'idempotency_keys_purge');
+      ```
 - [ ] Vercel cron job `email-retry` is listed under Project Settings → Cron Jobs.
 - [ ] Test admin password rotation via `/admin/account` and confirm other sessions revoked.
 - [ ] Print backup CSV of confirmed guests + load on a tablet that does not depend on Wi-Fi.

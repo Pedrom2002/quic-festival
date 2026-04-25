@@ -11,7 +11,17 @@
 
 import http from "k6/http";
 import { check, sleep } from "k6";
-import { randomString } from "https://jslib.k6.io/k6-utils/1.4.0/index.js";
+
+// Inlined randomString to avoid runtime fetch from jslib CDN — keeps the
+// test runnable in air-gapped CI / pre-event prep on flaky networks.
+const ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
+function randomString(length) {
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
+  }
+  return out;
+}
 
 const BASE_URL = __ENV.BASE_URL || "http://localhost:3000";
 
