@@ -39,16 +39,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Limite extra por (IP, email) — atrasa credential stuffing.
+  // Limite extra por (IP, email) — atrasa credential stuffing local.
   const userRl = await rateLimit(
     `signin:${ip}:${parsed.data.email}`,
     5,
     5 * 60_000,
   );
-  if (!userRl.ok) {
+  // Limite global por email — atacante a rodar IPs continua bloqueado por user.
+  const userGlobalRl = await rateLimit(
+    `signin:email:${parsed.data.email}`,
+    20,
+    60 * 60_000,
+  );
+  if (!userRl.ok || !userGlobalRl.ok) {
+    const retry = Math.max(userRl.retryAfterSeconds, userGlobalRl.retryAfterSeconds);
     return NextResponse.json(
       { error: "Demasiadas tentativas. Tenta dentro de uns minutos." },
-      { status: 429, headers: { "Retry-After": String(userRl.retryAfterSeconds) } },
+      { status: 429, headers: { "Retry-After": String(retry) } },
     );
   }
 

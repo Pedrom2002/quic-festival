@@ -13,6 +13,22 @@ const bodySchema = z.object({
   captchaToken: z.string().optional(),
 });
 
+// Defense-in-depth (Supabase já valida allow-list mas não confiamos só nele).
+function safeRedirect(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  try {
+    const u = new URL(raw);
+    const allowedOrigin = process.env.NEXT_PUBLIC_SITE_URL;
+    if (allowedOrigin && u.origin !== new URL(allowedOrigin).origin) {
+      return undefined;
+    }
+    if (!u.pathname.startsWith("/auth/callback")) return undefined;
+    return u.toString();
+  } catch {
+    return undefined;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const ip = ipFromHeaders(req.headers) ?? "unknown";
 
@@ -43,7 +59,7 @@ export async function POST(req: NextRequest) {
   const { error } = await supa.auth.signInWithOtp({
     email: parsed.data.email,
     options: {
-      emailRedirectTo: parsed.data.redirectTo,
+      emailRedirectTo: safeRedirect(parsed.data.redirectTo),
     },
   });
 

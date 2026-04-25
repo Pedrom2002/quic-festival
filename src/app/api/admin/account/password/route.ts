@@ -38,9 +38,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Sem permissões." }, { status: 403 });
   }
 
-  // Rate-limit por IP + por user — evita brute-force do current password.
-  const rl = await rateLimit(`pwchange:${ip}:${user.email}`, 5, 10 * 60_000);
-  if (!rl.ok) {
+  // Rate-limit por (IP, user) + global por user (anti-rotação de IPs).
+  const rlIp = await rateLimit(`pwchange:${ip}:${user.email}`, 5, 10 * 60_000);
+  const rlUser = await rateLimit(`pwchange:user:${user.email}`, 10, 60 * 60_000);
+  if (!rlIp.ok || !rlUser.ok) {
     return NextResponse.json(
       { error: "Demasiadas tentativas. Tenta dentro de uns minutos." },
       { status: 429 },
