@@ -118,8 +118,12 @@ export function middleware(req: NextRequest) {
     csp = buildCsp(nonce);
   }
 
-  // CSRF guard apenas para mutações em rotas de API
-  if (pathname.startsWith("/api/") && !SAFE_METHODS.has(req.method)) {
+  // CSRF guard apenas para mutações em rotas de API.
+  // Excepção: /api/csp-report. Browsers que disparam CSP reports
+  // tipicamente NÃO incluem Origin nem Sec-Fetch-Site, e o endpoint já é
+  // self-protected (rate-limit por IP, body cap, parsing estrito).
+  const isCspReport = pathname === "/api/csp-report";
+  if (pathname.startsWith("/api/") && !SAFE_METHODS.has(req.method) && !isCspReport) {
     const origin = req.headers.get("origin");
     const host = req.headers.get("host");
     const sfs = req.headers.get("sec-fetch-site");

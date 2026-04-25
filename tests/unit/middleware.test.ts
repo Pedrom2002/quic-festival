@@ -137,6 +137,15 @@ describe("middleware CSRF", () => {
     expect(res.status).toBe(403);
   });
 
+  it("POST /api/csp-report bypassa CSRF (browser reports sem Origin)", async () => {
+    const res = await callMiddleware({
+      url: "https://quic.pt/api/csp-report",
+      method: "POST",
+      headers: { host: "quic.pt" },
+    });
+    expect(res.status).toBe(200);
+  });
+
   it("POST com Origin igual ao host passa", async () => {
     const res = await callMiddleware({
       url: "https://quic.pt/api/rsvp",
