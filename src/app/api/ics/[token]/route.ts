@@ -30,7 +30,7 @@ export async function GET(
   const admin = supabaseAdmin();
   const { data: guest } = await admin
     .from("guests")
-    .select("name,token")
+    .select("id,name,token,ics")
     .eq("token", verified.uuid)
     .maybeSingle();
 
@@ -38,13 +38,28 @@ export async function GET(
     return new NextResponse("Not found", { status: 404 });
   }
 
-  const ics = buildFestivalIcs(guest.name);
+  // Prefer the cached ICS payload (rendered at RSVP insert). Fall back to
+  // live render for legacy rows where `ics` is null, and back-fill so the
+  // next read hits the cache.
+  let ics = guest.ics as string | null;
+  if (!ics) {
+    ics = buildFestivalIcs(guest.name);
+    // Best-effort write; failure does not block the response.
+    void admin
+      .from("guests")
+      .update({ ics })
+      .eq("id", guest.id)
+      .then(({ error }) => {
+        if (error) console.warn("[ics] backfill failed", error.code ?? "unknown");
+      });
+  }
+
   return new NextResponse(ics, {
     status: 200,
     headers: {
       "Content-Type": "text/calendar; charset=utf-8",
       "Content-Disposition": `attachment; filename="quic-festival-2026.ics"`,
-      "Cache-Control": "no-store",
+      "Cache-Control": "private, max-age=300",
       "X-Robots-Tag": "noindex, noarchive, nofollow",
     },
   });

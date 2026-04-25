@@ -6,6 +6,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { LIMITS, RSVP_OPEN } from "@/lib/limits";
 import { signQrToken } from "@/lib/qr-token";
 import { ipFromHeaders } from "@/lib/audit";
+import { buildFestivalIcs } from "@/lib/ics";
 
 export const runtime = "nodejs";
 
@@ -106,6 +107,11 @@ export async function POST(req: NextRequest) {
   const companion_names =
     companion_count === 1 && data.companion_nome ? [data.companion_nome] : [];
 
+  // Pre-render ICS at insert time. Cheaper than per-request rendering on
+  // every download and naturally tied to the immutable name (0003 trigger
+  // prevents authenticated callers rewriting ics drift).
+  const ics = buildFestivalIcs(data.name);
+
   const { data: inserted, error: insertError } = await supabase
     .from("guests")
     .insert({
@@ -114,6 +120,7 @@ export async function POST(req: NextRequest) {
       phone: data.phone,
       companion_count,
       companion_names,
+      ics,
     })
     .select("id, token")
     .single();

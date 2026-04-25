@@ -1,6 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const guestResult = { value: { data: { name: "Maria", token: "11111111-1111-1111-1111-111111111111" }, error: null } as { data: { name: string; token: string } | null; error: unknown } };
+const guestResult = { value: { data: { id: "g1", name: "Maria", token: "11111111-1111-1111-1111-111111111111", ics: null as string | null }, error: null } as { data: { id: string; name: string; token: string; ics: string | null } | null; error: unknown } };
+
+const updateBackfill = vi.fn(() => ({
+  eq: () => ({
+    then: (cb: (r: { error: unknown }) => void) => {
+      cb({ error: null });
+      return Promise.resolve({ error: null });
+    },
+  }),
+}));
 
 vi.mock("@/lib/supabase/admin", () => ({
   supabaseAdmin: () => ({
@@ -10,6 +19,7 @@ vi.mock("@/lib/supabase/admin", () => ({
           maybeSingle: async () => guestResult.value,
         }),
       }),
+      update: updateBackfill,
     }),
   }),
 }));
@@ -21,7 +31,16 @@ beforeEach(() => {
   vi.resetModules();
   rateLimitMock.mockClear();
   rateLimitMock.mockResolvedValue({ ok: true, retryAfterSeconds: 0 });
-  guestResult.value = { data: { name: "Maria", token: "11111111-1111-1111-1111-111111111111" }, error: null };
+  updateBackfill.mockClear();
+  guestResult.value = {
+    data: {
+      id: "g1",
+      name: "Maria",
+      token: "11111111-1111-1111-1111-111111111111",
+      ics: null,
+    },
+    error: null,
+  };
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -33,16 +52,34 @@ async function call(token: string, headers: Record<string, string> = {}) {
 }
 
 describe("GET /api/ics/[token]", () => {
-  it("happy: 200 ICS com headers correctos", async () => {
+  it("happy: 200 ICS com headers correctos (live render quando ics=null)", async () => {
     const res = await call("11111111-1111-1111-1111-111111111111");
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toContain("text/calendar");
-    expect(res.headers.get("cache-control")).toBe("no-store");
+    expect(res.headers.get("cache-control")).toContain("private");
     expect(res.headers.get("content-disposition")).toContain("attachment");
     expect(res.headers.get("x-robots-tag")).toContain("noindex");
     const text = await res.text();
     expect(text).toContain("BEGIN:VCALENDAR");
     expect(text).toContain("Maria");
+    // live-render path triggers backfill
+    expect(updateBackfill).toHaveBeenCalledOnce();
+  });
+
+  it("cache hit: usa ics pre-renderizado, sem backfill", async () => {
+    guestResult.value = {
+      data: {
+        id: "g1",
+        name: "Maria",
+        token: "11111111-1111-1111-1111-111111111111",
+        ics: "BEGIN:VCALENDAR\r\nCACHED\r\nEND:VCALENDAR",
+      },
+      error: null,
+    };
+    const res = await call("11111111-1111-1111-1111-111111111111");
+    const text = await res.text();
+    expect(text).toContain("CACHED");
+    expect(updateBackfill).not.toHaveBeenCalled();
   });
 
   it("UUID inválido → 404", async () => {

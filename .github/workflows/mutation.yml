@@ -1,0 +1,38 @@
+name: mutation
+
+# Runs Stryker mutation testing across src/lib/**. Manual only — mutation
+# runs are slow (10s of minutes) and noisy. Trigger via Actions tab when
+# investigating a regression or before bumping a critical lib.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekly Sunday 04:00 UTC. Failures notify via the standard GH email.
+    - cron: "0 4 * * 0"
+
+permissions:
+  contents: read
+
+jobs:
+  stryker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx stryker run
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://test.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: test-service-key
+          RESEND_API_KEY: re_test_key
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: stryker-report
+          path: reports/mutation/
+          retention-days: 30

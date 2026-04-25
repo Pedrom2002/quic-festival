@@ -48,8 +48,18 @@ function buildCsp(nonce: string): string {
     "form-action 'self'",
     "object-src 'none'",
     "upgrade-insecure-requests",
+    // CSP violation reporting. Browsers send to report-uri (legacy) and
+    // report-to (Reporting API). The /api/csp-report endpoint logs via
+    // pino + (when DSN set) Sentry.
+    "report-uri /api/csp-report",
+    "report-to csp-endpoint",
   ].join("; ");
 }
+
+// Reporting-Endpoints header: tells modern browsers where to send report-to
+// reports. Same path as report-uri so both legacy and modern browsers reach
+// the same handler.
+const REPORTING_ENDPOINTS = 'csp-endpoint="/api/csp-report"';
 
 function originAllowed(origin: string | null, host: string | null): boolean {
   if (!origin) return false;
@@ -138,10 +148,16 @@ export function middleware(req: NextRequest) {
     }
   }
 
-  // Propaga nonce para Next via request header (Next 16 lê e injeta automaticamente
-  // em scripts próprios) + repete CSP no response.
+  // Propaga nonce + request-id para Next. Request-id permite correlacionar
+  // logs/audit/Sentry no mesmo trace. Reusa o do upstream se vier (ex.: Vercel
+  // edge network), senão gera novo UUID.
   const requestHeaders = new Headers(req.headers);
   if (nonce) requestHeaders.set("x-nonce", nonce);
+  let requestId = req.headers.get("x-request-id");
+  if (!requestId) {
+    requestId = crypto.randomUUID();
+    requestHeaders.set("x-request-id", requestId);
+  }
 
   const response = NextResponse.next({
     request: { headers: requestHeaders },
@@ -149,7 +165,9 @@ export function middleware(req: NextRequest) {
 
   if (csp) {
     response.headers.set("Content-Security-Policy", csp);
+    response.headers.set("Reporting-Endpoints", REPORTING_ENDPOINTS);
   }
+  response.headers.set("x-request-id", requestId);
 
   return response;
 }
