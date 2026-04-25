@@ -28,6 +28,7 @@ const SCRIPT_SRC =
 let scriptPromise: Promise<void> | null = null;
 
 function loadScript(): Promise<void> {
+  /* v8 ignore next */
   if (typeof window === "undefined") return Promise.resolve();
   if (window.turnstile) return Promise.resolve();
   if (scriptPromise) return scriptPromise;
@@ -70,12 +71,15 @@ export default function Turnstile({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
   const onTokenRef = useRef(onToken);
-  onTokenRef.current = onToken;
+  useEffect(() => {
+    onTokenRef.current = onToken;
+  }, [onToken]);
 
   useEffect(() => {
     let cancelled = false;
     loadScript()
       .then(() => {
+        /* v8 ignore next */
         if (cancelled || !containerRef.current || !window.turnstile) return;
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey,

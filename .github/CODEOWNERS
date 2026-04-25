@@ -1,0 +1,10 @@
+* @pedrom2002
+
+# Security-sensitive paths require review
+/src/middleware.ts                 @pedrom2002
+/src/lib/supabase/                 @pedrom2002
+/src/lib/turnstile.ts              @pedrom2002
+/src/lib/rate-limit.ts             @pedrom2002
+/src/app/api/admin/                @pedrom2002
+/supabase/migrations/              @pedrom2002
+/.github/                          @pedrom2002

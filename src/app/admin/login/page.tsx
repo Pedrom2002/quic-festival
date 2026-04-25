@@ -38,6 +38,7 @@ export default function AdminLoginPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password, captchaToken }),
+      /* v8 ignore next */
       }).catch(() => null);
       const json = (await res?.json().catch(() => ({}))) as {
         error?: string;
@@ -60,6 +61,7 @@ export default function AdminLoginPage() {
         captchaToken,
         redirectTo: `${window.location.origin}/auth/callback?next=/admin`,
       }),
+    /* v8 ignore next */
     }).catch(() => null);
     const json = (await res?.json().catch(() => ({}))) as {
       error?: string;

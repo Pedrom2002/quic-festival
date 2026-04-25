@@ -34,28 +34,15 @@ npm run dev -- --turbopack    # turbopack
 
 1. Criar projeto em <https://supabase.com>
 2. SQL editor: correr `supabase/migrations/0001_init.sql`
-3. SQL editor: correr `supabase/seed.sql` (insere admins em `public.admins`)
-4. Aplicar SQL extra para hardening:
-   ```sql
-   alter table public.admins enable row level security;
-   create policy admins_no_anon on public.admins for all to anon, authenticated using (false) with check (false);
-
-   create table if not exists public.audit_log (
-     id bigserial primary key,
-     occurred_at timestamptz not null default now(),
-     actor_email text,
-     action text not null,
-     target_id uuid,
-     ip text,
-     meta jsonb
-   );
-   alter table public.audit_log enable row level security;
-   create policy audit_log_no_anon on public.audit_log for all to anon, authenticated using (false) with check (false);
-   create index audit_log_occurred_idx on public.audit_log(occurred_at desc);
-   create index audit_log_actor_idx on public.audit_log(actor_email);
-   ```
+3. SQL editor: correr `supabase/migrations/0002_hardening.sql` (audit_log + RLS deny-all + immutability triggers + retention helper)
+4. SQL editor: correr `supabase/seed.sql` (insere admins em `public.admins`)
 5. Auth → **URL Configuration**: adicionar `http://localhost:3000/**` e URL prod ao redirect allowlist.
-6. Definir password de admin (opcional, alternativa ao magic link). Pelo Studio
+6. (Opcional) agendar retenção via pg_cron:
+   ```sql
+   select cron.schedule('audit_log_retention', '0 4 * * *',
+     $$ select public.audit_log_purge(180) $$);
+   ```
+7. Definir password de admin (opcional, alternativa ao magic link). Pelo Studio
    ou via Admin API:
    ```bash
    curl -X PUT "$SUPABASE_URL/auth/v1/admin/users/<USER_ID>" \
@@ -82,12 +69,15 @@ local mas em Vercel é per-lambda (cada cold start = contador novo).
 ```
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY        # server-only
+SUPABASE_SERVICE_ROLE_KEY          # server-only
 RESEND_API_KEY
-RESEND_FROM                      # ex.: "QUIC Festival <onboarding@resend.dev>"
-NEXT_PUBLIC_SITE_URL             # ex.: https://quic.pt OU https://quic-festival.vercel.app
-UPSTASH_REDIS_REST_URL           # opcional
-UPSTASH_REDIS_REST_TOKEN         # opcional
+RESEND_FROM                        # obrigatório em produção (throw se ausente)
+NEXT_PUBLIC_SITE_URL               # ex.: https://quic.pt OU https://quic-festival.vercel.app
+UPSTASH_REDIS_REST_URL             # opcional (sem isto → fallback memória per-lambda)
+UPSTASH_REDIS_REST_TOKEN
+TURNSTILE_SECRET_KEY               # obrigatório em produção (fail-closed se ausente)
+NEXT_PUBLIC_TURNSTILE_SITE_KEY     # par do anterior
+RSVP_OPEN                          # opcional, "false" desliga /api/rsvp (kill-switch)
 ```
 
 ## Rotas
@@ -97,10 +87,12 @@ UPSTASH_REDIS_REST_TOKEN         # opcional
 | Método | Rota | Função |
 |---|---|---|
 | GET | `/` | Landing + form RSVP + lineup |
-| POST | `/api/rsvp` | Insere guest, envia email com QR. Rate-limit 10/min/IP + 3/min/(IP,email). |
+| GET | `/privacidade` | Política RGPD |
+| POST | `/api/rsvp` | Insere guest, envia email com QR. Rate-limit 10/min/IP + 3/min/(IP,email) + 5/h/email. Kill-switch via `RSVP_OPEN=false`. |
 | GET | `/confirmado/[token]` | Página pós-submit com QR (noindex, noarchive) |
-| GET | `/api/qr/[token]` | PNG do QR (rate-limit 60/min/IP, cache 1y) |
+| GET | `/api/qr/[token]` | PNG do QR (rate-limit 60/min/IP, cache `private, max-age=300`) |
 | GET | `/api/ics/[token]` | Calendar `.ics` (rate-limit 30/min/IP, noindex) |
+| GET | `/api/health` | Verifica Supabase + Resend; 200 ou 503 |
 
 ### Auth
 
@@ -122,8 +114,9 @@ UPSTASH_REDIS_REST_TOKEN         # opcional
 | GET | `/admin/account` | Mudar password |
 | PATCH | `/api/admin/checkin` | Toggle `checked_in_at` (aceita `id` ou `token`) |
 | POST | `/api/admin/resend-email` | Reenvia email + QR |
-| GET | `/api/admin/export` | CSV stream (com formula injection guard) |
+| GET | `/api/admin/export` | CSV stream (com formula injection guard, filename em tz Lisboa) |
 | POST | `/api/admin/account/password` | Mudar password (re-auth com current) |
+| DELETE | `/api/admin/guest/[id]` | RGPD: eliminar inscrição (audit `admin.guest.deleted` com email_hash) |
 
 ## Segurança
 
@@ -168,6 +161,77 @@ vercel --prod --yes
 2. Abrir `/admin/scan` → permitir câmara.
 3. Apontar a cada QR de convidado. Feedback verde/amarelo/vermelho + vibração.
 4. Sem câmara: usar input manual em `/admin/scan` ou `/admin` → toggle Check-in.
+
+## Testes
+
+Suite com **Vitest 4** (279 unit/integração) + **Playwright** (24 e2e específicos) + **@axe-core/playwright** (a11y).
+
+Coverage v8 actual: **99.75% lines / 98.23% statements / 95.7% branches / 92.26% functions**. Threshold CI bloqueia abaixo de 99/98/95/92.
+
+```bash
+npm run test            # vitest run (unit)
+npm run test:watch      # vitest watch
+npm run test:cov        # coverage HTML em ./coverage/index.html
+npm run e2e             # playwright (precisa Next a correr ou usa webServer integrado)
+npm run e2e:ui          # modo interactivo
+npm run audit           # npm audit prod deps high+
+npm run verify          # lint + tsc --noEmit + test:cov (gate pré-commit)
+```
+
+Estrutura:
+
+```
+tests/
+  unit/
+    lib/                # validators, csv, ics, qr, rate-limit, audit, turnstile, email, supabase x3
+    middleware.test.ts  # CSP, CSRF, host enforce, body-size
+    api/                # 11 ficheiros, 1 por route handler
+    components/         # rsvp-form, guests-table, qr-scanner, account-form, turnstile, scene, blobs, lineup, confirmado-actions
+    app/                # pages (server + client) + robots + sitemap + layouts
+    edge-cases.test.tsx # branches residuais (origin malformado, redirect null, magic-link reject, etc.)
+  e2e/
+    smoke.spec.ts        # 4 specs: CSP nonce, /admin redirect, UUID guard, form visível
+    rsvp-flow.spec.ts    # 5 specs: validação client, success, rate-limit, dedup, acompanhante toggle
+    admin-login.spec.ts  # 5 specs: password+OTP success/erro/rate-limit
+    security.spec.ts     # 6 specs: HSTS/X-Frame/CSP/CSRF/body-size/UUID guard
+    a11y.spec.ts         # 2 specs: axe wcag2a/wcag2aa em / e /admin/login
+    rate-limit.spec.ts   # skip sem Upstash; 1 spec: 11ª submissão = 429
+    confirmado-pii.spec.ts # skip sem E2E_TEST_TOKEN seed; 1 spec: noindex meta
+  setup/vitest.setup.ts
+  mocks/server.ts        # MSW setupServer
+  mocks/supabase.ts      # factory parametrizável (auth + from().select/insert/update/eq/maybeSingle)
+```
+
+Mocks externos:
+- `qrcode` lib via `vi.mock` (toDataURL/toBuffer determinístico)
+- `html5-qrcode` via mock class — happy/error paths + camera missing
+- `framer-motion` via Proxy (filtra props animação para evitar warnings em jsdom)
+- Supabase clients (admin/server/browser) via mock factories
+- Resend via `class FakeResend` constructor stub
+- MSW v2 para Upstash Redis REST + Cloudflare Turnstile siteverify
+
+E2E mock backend via `page.route()` para evitar Supabase/Resend reais. Specs com prefixo `rate-limit`/`confirmado-pii` correm só com env vars opcionais (Upstash, seed token).
+
+CI: [`.github/workflows/test.yml`](.github/workflows/test.yml) — lint + tsc + unit matrix (Node 20+22) + Playwright chromium + a11y. Falha se threshold cov não bater.
+
+**Caveat honesto:** 99.75% lines não prova correctness. Não cobertos por unit/playwright headless:
+- **Scanner real** em telemóvel iOS/Android (jsdom + html5-qrcode mock não simula decode de câmara)
+- **Email rendering** Gmail/Outlook/Apple Mail (HTML dark-mode lock testado só em DOM, não cliente real)
+- **RLS Supabase** com session anon vs service_role (mocks bypassam policies — precisa `supabase start` + Docker)
+- **Turnstile real** chave Cloudflare (test usa `TURNSTILE_SECRET_KEY=` empty → skipped)
+- **Three.js scene** decorativa — só smoke render, sem visual snapshot
+- **Mutation testing** (Stryker) — não config, custo alto em CI
+- **Visual regression** (Percy/Chromatic) — não config, requer SaaS
+
+Branches/linhas residuais (~1%) são paths defensivos marcados com `/* v8 ignore */` cirúrgico:
+- `rate-limit.ts:37` — guard `!url || !token` já filtrado por caller
+- `turnstile.ts:46` — `e instanceof Error` non-Error catch
+- `turnstile.tsx:31,79` — `typeof window === undefined` edge runtime, cancelled cleanup race
+- `middleware.ts` — outer catch `originAllowed` quando `new URL` rebenta
+- API routes — defensive `console.error` calls
+- Login page — `.catch(() => null)` em fetch reject (testado em ambos os modes)
+
+Para ir a 100% real → precisa Supabase local, ffmpeg para gerar `qr.y4m`, Stryker run, Litmus email checker. Esses passos levam ~3 dias adicionais de setup.
 
 ## Troubleshooting
 

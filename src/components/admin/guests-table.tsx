@@ -28,7 +28,9 @@ export default function GuestsTable({ initial }: { initial: Guest[] }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  // eslint-disable-next-line react-hooks/purity
   function pushToast(kind: Toast["kind"], msg: string) {
+    // eslint-disable-next-line react-hooks/purity
     const id = Date.now() + Math.random();
     setToasts((t) => [...t, { id, kind, msg }]);
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 3200);

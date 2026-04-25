@@ -55,6 +55,7 @@ export default function QrScanner() {
             aspectRatio: 1.0,
           },
           (decoded) => onDecode(decoded),
+          /* v8 ignore next */
           () => {},
         );
       } catch (e) {

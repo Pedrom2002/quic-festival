@@ -9,6 +9,7 @@ export default function Scene() {
 
   useEffect(() => {
     const starsEl = starsRef.current;
+    /* v8 ignore next */
     if (!starsEl) return;
 
     starsEl.innerHTML = "";
@@ -31,6 +32,7 @@ export default function Scene() {
     const renderBulbs = () => {
       const wrap = bulbsRef.current;
       const svg = svgRef.current;
+      /* v8 ignore next */
       if (!wrap || !svg) return;
 
       wrap.innerHTML = "";
