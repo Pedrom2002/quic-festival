@@ -3,10 +3,18 @@ import { rsvpSchema } from "@/lib/validators";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendRsvpEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
+import { LIMITS, RSVP_OPEN } from "@/lib/limits";
 
 export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
+  if (!RSVP_OPEN) {
+    return NextResponse.json(
+      { error: "Inscrições encerradas." },
+      { status: 503 },
+    );
+  }
+
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     req.headers.get("x-real-ip") ??
@@ -27,20 +35,43 @@ export async function POST(req: NextRequest) {
 
   const data = parsed.data;
 
-  // Limite global por IP (10/min) para travar enumeration / spam mesmo com emails diferentes.
-  const ipRl = await rateLimit(`rsvp:ip:${ip}`, 10, 60_000);
+  // Anti-spam tiered:
+  //   1. per IP — blocks volumetric abuse from one source
+  //   2. per (IP, email) — blocks retries of same submission
+  //   3. per email globally — blocks IP-rotating abuse against same recipient
+  //      (caps email vendor cost amplification)
+  const ipRl = await rateLimit(
+    `rsvp:ip:${ip}`,
+    LIMITS.rsvp.perIp.max,
+    LIMITS.rsvp.perIp.windowMs,
+  );
   if (!ipRl.ok) {
     return NextResponse.json(
       { error: "Demasiados pedidos. Tenta mais tarde." },
       { status: 429, headers: { "Retry-After": String(ipRl.retryAfterSeconds) } },
     );
   }
-  // Limite por (IP, email) — protege contra retries do mesmo user.
-  const rl = await rateLimit(`rsvp:${ip}:${data.email}`, 3, 60_000);
+  const rl = await rateLimit(
+    `rsvp:${ip}:${data.email}`,
+    LIMITS.rsvp.perIpEmail.max,
+    LIMITS.rsvp.perIpEmail.windowMs,
+  );
   if (!rl.ok) {
     return NextResponse.json(
       { error: "Demasiados pedidos. Tenta mais tarde." },
       { status: 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+    );
+  }
+  const emailGlobalRl = await rateLimit(
+    `rsvp:email:${data.email}`,
+    LIMITS.rsvp.perEmailGlobal.max,
+    LIMITS.rsvp.perEmailGlobal.windowMs,
+  );
+  if (!emailGlobalRl.ok) {
+    // Generic message — does not confirm whether email already exists.
+    return NextResponse.json(
+      { error: "Demasiados pedidos. Tenta mais tarde." },
+      { status: 429, headers: { "Retry-After": String(emailGlobalRl.retryAfterSeconds) } },
     );
   }
 
