@@ -3,12 +3,16 @@ import { z } from "zod";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { audit, ipFromHeaders } from "@/lib/audit";
+import { verifyQrToken } from "@/lib/qr-token";
 
 export const runtime = "nodejs";
 
+// Token aceita UUID puro (legacy) ou string assinada `<uuid>.<exp>.<sig>`.
+// Limite superior generoso para acomodar formato assinado (~94 chars) com
+// margem para ttl maior no futuro.
 const bodySchema = z.object({
   id: z.string().uuid().optional(),
-  token: z.string().uuid().optional(),
+  token: z.string().min(36).max(512).optional(),
   checked_in: z.boolean().default(true),
 });
 
@@ -43,10 +47,26 @@ export async function PATCH(req: NextRequest) {
   const { id, token, checked_in } = parsed.data;
   const ip = ipFromHeaders(req.headers);
 
+  // Resolve token assinado (ou UUID legacy) para o `guests.token` persistido.
+  let resolvedToken: string | null = null;
+  if (token) {
+    const verified = await verifyQrToken(token);
+    if (!verified.ok) {
+      await audit({
+        action: "admin.checkin.not_found",
+        actorEmail: user.email,
+        ip,
+        meta: { reason: verified.reason },
+      });
+      return NextResponse.json({ error: "QR inválido ou expirado." }, { status: 404 });
+    }
+    resolvedToken = verified.uuid;
+  }
+
   const lookup = admin.from("guests").select("id,name,companion_count,checked_in_at");
   const { data: guest } = id
     ? await lookup.eq("id", id).maybeSingle()
-    : await lookup.eq("token", token!).maybeSingle();
+    : await lookup.eq("token", resolvedToken!).maybeSingle();
 
   if (!guest) {
     await audit({

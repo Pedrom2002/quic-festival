@@ -119,13 +119,13 @@ describe("middleware CSRF", () => {
     expect(res.status).toBe(200);
   });
 
-  it("POST same-site via Sec-Fetch-Site passa", async () => {
+  it("POST same-site via Sec-Fetch-Site bloqueado (sub-origem não confiável)", async () => {
     const res = await callMiddleware({
       url: "https://quic.pt/api/rsvp",
       method: "POST",
       headers: { host: "quic.pt", "sec-fetch-site": "same-site" },
     });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(403);
   });
 
   it("POST cross-site sem origin válida → 403", async () => {

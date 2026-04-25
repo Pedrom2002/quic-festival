@@ -1,0 +1,54 @@
+name: db-migrate
+
+# Lint migrations on every PR. Apply migrations on master push (gated by env).
+#
+# Required repo secrets:
+#   SUPABASE_ACCESS_TOKEN  — personal access token (Supabase dashboard).
+#   SUPABASE_DB_PASSWORD   — DB password for `db push`.
+#   SUPABASE_PROJECT_REF   — project ref id (xxxxxxxx).
+
+on:
+  push:
+    branches: [master]
+    paths: ["supabase/migrations/**"]
+  pull_request:
+    paths: ["supabase/migrations/**"]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Validate migrations syntax (db lint via diff dry-run)
+        run: |
+          # Boots a local Postgres and applies every migration in order.
+          # Fails the job if any migration errors out.
+          supabase db start
+          supabase db reset --linked=false
+          supabase db stop
+
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    needs: lint
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Link project
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
+      - name: Push migrations
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: supabase db push --include-all

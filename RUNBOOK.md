@@ -34,10 +34,57 @@ Defaults are intentionally tight. Raise via `src/lib/limits.ts` and redeploy. No
 
 - [ ] `GET /api/health` returns 200 in production.
 - [ ] At least one real RSVP submitted from a non-admin email; QR received; QR decoded by `/admin/scan` on iPhone + Android.
-- [ ] Vercel envs audited: `UPSTASH_REDIS_REST_*` set (otherwise rate-limit is per-lambda only), `RESEND_FROM` uses verified domain, `TURNSTILE_*` set.
-- [ ] `supabase/migrations/0002_hardening.sql` applied (audit_log table, RLS, immutability triggers).
+- [ ] Vercel envs audited: `UPSTASH_REDIS_REST_*` set (without these, rate-limit fails-closed in prod and returns 503 — see "Rate-limit degraded" below), `RESEND_FROM` uses verified domain, `TURNSTILE_*` set, `QR_TOKEN_SECRET` set (>= 32 random bytes), `CRON_SECRET` set, `SENTRY_DSN` set.
+- [ ] All migrations applied: `0001_init.sql`, `0002_hardening.sql`, `0003_rls_uid_and_columns.sql`, `0004_idempotency_keys.sql`, `0006_audit_retention_cron.sql`. Use `supabase db push` (handled by `db-migrate.yml` on master push if `SUPABASE_*` secrets are set).
+- [ ] `pg_cron` extension enabled on the Supabase project (Dashboard → Database → Extensions). Required by 0006.
+- [ ] `admins.user_id` populated for every admin row (see migration 0003 backfill; verify with `select email, user_id from public.admins`).
+- [ ] `cron.job` shows `audit_log_retention` scheduled (`select * from cron.job;` in Supabase SQL editor).
+- [ ] Vercel cron job `email-retry` is listed under Project Settings → Cron Jobs.
 - [ ] Test admin password rotation via `/admin/account` and confirm other sessions revoked.
 - [ ] Print backup CSV of confirmed guests + load on a tablet that does not depend on Wi-Fi.
+
+## Rate-limit degraded (Upstash outage)
+
+In production, when Upstash Redis is unreachable the rate-limiter fails closed: `rateLimit()` returns `{ ok: false, degraded: true }` and protected routes respond 503 instead of allowing through. This is intentional — better a temporary 503 burst than unbounded RSVP/sign-in spam.
+
+Observe: Sentry will fire on the warn `[rate-limit] upstash falhou:`. If the outage is sustained:
+1. Check Upstash status and the project quota (free tier daily cap).
+2. Temporarily route to a hot standby Redis by updating `UPSTASH_REDIS_REST_*` envs and redeploying.
+3. As a last resort, unset both Upstash envs to fall back to the per-lambda in-memory limiter (degrades but does not block).
+
+## QR token rotation
+
+Tokens are HMAC-signed (`<uuid>.<exp>.<sig>`) using `QR_TOKEN_SECRET`. Rotate the secret:
+1. Generate new secret (32+ random bytes).
+2. Update `QR_TOKEN_SECRET` in Vercel envs and redeploy.
+3. All QRs in already-sent emails immediately become invalid. Use `POST /api/admin/resend-email` (or the bulk cron `email-retry` after clearing `email_sent_at`) to issue fresh ones.
+4. UUID-only legacy tokens are rejected when secret is set; keep this in mind before rotating during the event window.
+
+## Email retry cron
+
+Vercel cron at `*/5 * * * *` hits `GET /api/cron/email-retry`. Authorization via `Authorization: Bearer ${CRON_SECRET}`. Manually trigger via:
+
+```
+curl -H "x-cron-secret: $CRON_SECRET" https://quic.pt/api/cron/email-retry
+```
+
+Job re-tries up to 25 RSVPs per run with `email_sent_at IS NULL` and `created_at >= now() - 1h`. Older candidates are abandoned by design (any guest from > 1h ago should be picked up by the admin "Reenviar" UI, not the cron).
+
+## Load testing
+
+`npm run load:rsvp` (requires `k6` installed locally). Targets `BASE_URL` (default `http://localhost:3000`). Staged ramp 0 → 50 VUs over 2 min. Run before each event against staging — never against prod once RSVP is live.
+
+## RLS contract test
+
+Live RLS validation runs in `.github/workflows/rls-contract.yml` on PRs touching migrations and on a daily cron. Local repro:
+
+```
+supabase start
+SUPABASE_RLS_TEST_URL=$(supabase status -o env | grep API_URL | cut -d= -f2) \
+SUPABASE_RLS_TEST_ANON_KEY=$(supabase status -o env | grep ANON_KEY | cut -d= -f2) \
+SUPABASE_RLS_TEST_SERVICE_KEY=$(supabase status -o env | grep SERVICE_ROLE_KEY | cut -d= -f2) \
+npx vitest run tests/rls/contract.test.ts
+```
 
 ## Key rotation
 

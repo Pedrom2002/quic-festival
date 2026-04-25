@@ -22,10 +22,17 @@ function buildCsp(nonce: string): string {
     ? `'self' 'nonce-${nonce}' 'strict-dynamic'`
     : `'self' 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://challenges.cloudflare.com`;
 
+  // style-src: idealmente queríamos remover 'unsafe-inline' por completo, mas
+  // Tailwind v4 + Next CSS injection ainda usa <style> sem nonce em alguns
+  // caminhos. Damos nonce para browsers que o honram; 'unsafe-inline' fica
+  // como fallback. A remoção total fica para quando Next emitir nonces para
+  // todos os style tags.
+  const styleSrc = `'self' 'nonce-${nonce}' 'unsafe-inline' https://fonts.googleapis.com`;
+
   return [
     "default-src 'self'",
     `script-src ${scriptSrc}`,
-    `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
+    `style-src ${styleSrc}`,
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
     "media-src 'self' blob:",
@@ -102,10 +109,11 @@ export function middleware(req: NextRequest) {
     const host = req.headers.get("host");
     const sfs = req.headers.get("sec-fetch-site");
 
-    // Permite same-origin via Sec-Fetch-Site (browsers modernos)
-    const sameSite = sfs === "same-origin" || sfs === "same-site";
+    // Apenas same-origin é aceite via Sec-Fetch-Site. 'same-site' permitiria
+    // ataques de subdomínio noutro contexto; aqui só temos um host canónico.
+    const sameOrigin = sfs === "same-origin";
 
-    if (!sameSite && !originAllowed(origin, host)) {
+    if (!sameOrigin && !originAllowed(origin, host)) {
       return NextResponse.json(
         { error: "Origin não permitida." },
         { status: 403 },

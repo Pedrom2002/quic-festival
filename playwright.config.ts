@@ -29,6 +29,15 @@ export default defineConfig({
         },
       },
     },
+    {
+      // Mobile Safari é a plataforma do scanner; admins vão estar em iPhones.
+      // Suite WebKit corre os mesmos specs (camera-dependent specs ficam
+      // skipped em CI sem permissão).
+      name: "webkit",
+      use: {
+        ...devices["iPhone 14"],
+      },
+    },
   ],
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined

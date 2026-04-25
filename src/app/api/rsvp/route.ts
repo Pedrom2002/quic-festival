@@ -4,8 +4,12 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendRsvpEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 import { LIMITS, RSVP_OPEN } from "@/lib/limits";
+import { signQrToken } from "@/lib/qr-token";
+import { ipFromHeaders } from "@/lib/audit";
 
 export const runtime = "nodejs";
+
+const IDEMPOTENCY_KEY_RE = /^[A-Za-z0-9_\-:.]{8,200}$/;
 
 export async function POST(req: NextRequest) {
   if (!RSVP_OPEN) {
@@ -15,10 +19,33 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown";
+  const ip = ipFromHeaders(req.headers) ?? "unknown";
+
+  // ── Idempotency-Key (optional). Caller pode dar uma key estável (ex.: hash
+  // local do form) e re-tentar com a mesma key sem disparar email duplicado.
+  // Resposta cached é mantida 1h por (IP, key).
+  const idempotencyKey = req.headers.get("idempotency-key");
+  const supabase = supabaseAdmin();
+  if (idempotencyKey) {
+    if (!IDEMPOTENCY_KEY_RE.test(idempotencyKey)) {
+      return NextResponse.json(
+        { error: "Idempotency-Key inválida." },
+        { status: 400 },
+      );
+    }
+    const { data: cached } = await supabase
+      .from("idempotency_keys")
+      .select("response, status_code")
+      .eq("scope", "rsvp")
+      .eq("key", `${ip}:${idempotencyKey}`)
+      .gt("expires_at", new Date().toISOString())
+      .maybeSingle();
+    if (cached) {
+      return NextResponse.json(cached.response ?? {}, {
+        status: cached.status_code ?? 200,
+      });
+    }
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = rsvpSchema.safeParse(body);
@@ -79,8 +106,6 @@ export async function POST(req: NextRequest) {
   const companion_names =
     companion_count === 1 && data.companion_nome ? [data.companion_nome] : [];
 
-  const supabase = supabaseAdmin();
-
   const { data: inserted, error: insertError } = await supabase
     .from("guests")
     .insert({
@@ -95,10 +120,9 @@ export async function POST(req: NextRequest) {
 
   if (insertError) {
     if (insertError.code === "23505") {
-      // Não revela se email já existe — protege contra user enumeration.
-      // Devolve 200 fake-success: utilizador legítimo pensará que ficou registado;
-      // não é re-enviado email (silently dropped). Atacante não consegue distinguir.
-      return NextResponse.json({ ok: true });
+      const dupeBody = { ok: true } as const;
+      await cacheIdempotency(supabase, ip, idempotencyKey, dupeBody, 200);
+      return NextResponse.json(dupeBody);
     }
     console.error("[rsvp] insert", insertError.code ?? "unknown");
     return NextResponse.json(
@@ -107,11 +131,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Token público assinado (ou UUID legacy se secret não definido).
+  const publicToken = await signQrToken(inserted.token);
+
   try {
     await sendRsvpEmail({
       to: data.email,
       name: data.name,
-      token: inserted.token,
+      token: publicToken,
     });
 
     await supabase
@@ -120,8 +147,31 @@ export async function POST(req: NextRequest) {
       .eq("id", inserted.id);
   } catch (e) {
     console.error("[rsvp] email", e);
-    // Não falha o request — o registo ficou gravado. Admin pode reenviar.
+    // Registo ficou gravado. Cron `/api/cron/email-retry` apanha o resto.
   }
 
-  return NextResponse.json({ token: inserted.token });
+  const responseBody = { token: publicToken };
+  await cacheIdempotency(supabase, ip, idempotencyKey, responseBody, 200);
+  return NextResponse.json(responseBody);
+}
+
+async function cacheIdempotency(
+  supabase: ReturnType<typeof supabaseAdmin>,
+  ip: string,
+  key: string | null,
+  response: Record<string, unknown>,
+  statusCode: number,
+) {
+  if (!key) return;
+  try {
+    await supabase.from("idempotency_keys").insert({
+      scope: "rsvp",
+      key: `${ip}:${key}`,
+      response,
+      status_code: statusCode,
+      expires_at: new Date(Date.now() + 60 * 60_000).toISOString(),
+    });
+  } catch {
+    /* idempotency cache é best-effort */
+  }
 }

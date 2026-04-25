@@ -45,7 +45,7 @@ describe("GET /api/qr/[token]", () => {
     expect(res.status).toBe(200);
     expect(res.headers.get("content-type")).toBe("image/png");
     expect(res.headers.get("cache-control")).toContain("private");
-    expect(res.headers.get("cache-control")).toContain("max-age=300");
+    expect(res.headers.get("cache-control")).toContain("max-age=60");
     expect(res.headers.get("x-robots-tag")).toBe("noindex, noarchive");
     const buf = new Uint8Array(await res.arrayBuffer());
     expect(buf[0]).toBe(0x89);

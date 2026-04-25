@@ -26,4 +26,17 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Bundle analyzer: corre só com ANALYZE=true (npm run analyze).
+// `require` runtime tolera ausência do package em CI/prod.
+let exported: NextConfig = nextConfig;
+if (process.env.ANALYZE === "true") {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const withBundleAnalyzer = require("@next/bundle-analyzer")({ enabled: true });
+    exported = withBundleAnalyzer(nextConfig);
+  } catch {
+    /* analyzer not installed; continue */
+  }
+}
+
+export default exported;

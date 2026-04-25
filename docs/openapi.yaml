@@ -1,0 +1,297 @@
+openapi: 3.1.0
+info:
+  title: QUIC Festival API
+  version: 0.2.0
+  description: |
+    HTTP API do QUIC Festival 2026: RSVP público + dashboard admin.
+    Todos os endpoints em produção exigem TLS, CSP, rate-limit + Turnstile (onde indicado).
+  contact:
+    name: QUIC Tech
+    email: tech@quic.pt
+servers:
+  - url: https://quic.pt
+    description: Produção
+  - url: http://localhost:3000
+    description: Local
+tags:
+  - name: public
+    description: Endpoints públicos (form RSVP, QR, ICS).
+  - name: admin
+    description: Endpoints admin (auth obrigatória + allowlist).
+  - name: ops
+    description: Health checks e cron internos.
+
+paths:
+  /api/health:
+    get:
+      tags: [ops]
+      summary: Health check (Supabase + Resend)
+      responses:
+        "200": { description: Tudo ok }
+        "503": { description: Pelo menos uma dependência em falha }
+
+  /api/rsvp:
+    post:
+      tags: [public]
+      summary: Submeter RSVP
+      description: |
+        Cria convidado, dispara email com QR. Idempotente via header
+        `Idempotency-Key`. Devolve 200 fake-success em caso de email duplicado
+        (anti user-enumeration).
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: false
+          schema: { type: string, minLength: 8, maxLength: 200 }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RsvpInput" }
+      responses:
+        "200":
+          description: Sucesso (ou duplicate silencioso)
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - { $ref: "#/components/schemas/RsvpSuccess" }
+                  - { $ref: "#/components/schemas/RsvpDuplicate" }
+        "400": { $ref: "#/components/responses/ValidationError" }
+        "413": { description: Body > 64KB }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503": { description: Inscrições encerradas ou rate-limit degraded }
+
+  /api/qr/{token}:
+    get:
+      tags: [public]
+      summary: PNG do QR de entrada
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string, description: "UUID legacy ou token assinado" }
+      responses:
+        "200":
+          description: PNG 512x512
+          content:
+            image/png: {}
+        "404": { description: Token inválido ou inexistente }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /api/ics/{token}:
+    get:
+      tags: [public]
+      summary: Calendário .ics do festival
+      parameters:
+        - in: path
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Ficheiro .ics
+          content:
+            text/calendar: {}
+
+  /api/admin/sign-in:
+    post:
+      tags: [admin]
+      summary: Login admin (email + password)
+      description: Requer Turnstile em produção. Rate-limit 5/5min/IP.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SignInInput" }
+      responses:
+        "200": { description: OK, sessão criada }
+        "400": { description: Pedido inválido / captcha falhou }
+        "401": { description: Credenciais inválidas }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /api/admin/sign-in/otp:
+    post:
+      tags: [admin]
+      summary: Magic-link (OTP por email)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+                captchaToken: { type: string }
+      responses:
+        "200": { description: Email enviado (sempre genérico) }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /api/admin/checkin:
+    patch:
+      tags: [admin]
+      summary: Toggle check-in de convidado
+      security: [{ adminCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id: { type: string, format: uuid }
+                token: { type: string }
+                checked_in: { type: boolean, default: true }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckinResult" }
+        "401": { description: Não autenticado }
+        "403": { description: Sem permissões }
+        "404": { description: Convidado não encontrado }
+
+  /api/admin/export:
+    get:
+      tags: [admin]
+      summary: Exportar lista de convidados (CSV)
+      security: [{ adminCookie: [] }]
+      responses:
+        "200":
+          description: CSV stream
+          content:
+            text/csv: {}
+
+  /api/admin/resend-email:
+    post:
+      tags: [admin]
+      summary: Reenviar email de RSVP
+      security: [{ adminCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string, format: uuid }
+      responses:
+        "200": { description: Reenviado }
+        "404": { description: Convidado inexistente }
+
+  /api/admin/account/password:
+    post:
+      tags: [admin]
+      summary: Alterar password do admin
+      security: [{ adminCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string, minLength: 1, maxLength: 200 }
+                newPassword: { type: string, minLength: 10, maxLength: 200 }
+      responses:
+        "200": { description: Password atualizada }
+        "401": { description: Password atual incorreta }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /api/admin/guest/{id}:
+    delete:
+      tags: [admin]
+      summary: Eliminar convidado (RGPD)
+      security: [{ adminCookie: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200": { description: Eliminado }
+        "404": { description: Inexistente }
+
+  /api/cron/email-retry:
+    post:
+      tags: [ops]
+      summary: Cron job — re-tenta envio de emails RSVP em falta
+      description: |
+        Protegido por header `x-cron-secret` (deve igualar `CRON_SECRET`).
+      parameters:
+        - in: header
+          name: x-cron-secret
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Retries efectuados (relatório no body) }
+        "401": { description: Secret inválido ou em falta }
+
+components:
+  securitySchemes:
+    adminCookie:
+      type: apiKey
+      in: cookie
+      name: sb-access-token
+  responses:
+    ValidationError:
+      description: Payload inválido
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string }
+              issues: { type: object, additionalProperties: { type: array, items: { type: string } } }
+    RateLimited:
+      description: Demasiados pedidos
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema:
+            type: object
+            properties: { error: { type: string } }
+  schemas:
+    RsvpInput:
+      type: object
+      required: [name, email, phone, acompanhante]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 120 }
+        email: { type: string, format: email }
+        phone: { type: string, pattern: "^9[0-9]{8}$" }
+        acompanhante: { type: string, enum: [sim, nao] }
+        companion_nome: { type: string, minLength: 2, maxLength: 120 }
+    RsvpSuccess:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string }
+    RsvpDuplicate:
+      type: object
+      required: [ok]
+      properties:
+        ok: { type: boolean, enum: [true] }
+    SignInInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 1, maxLength: 200 }
+        captchaToken: { type: string }
+    CheckinResult:
+      type: object
+      properties:
+        ok: { type: boolean }
+        guest:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            name: { type: string }
+            companion_count: { type: integer }
+        was_already_checked_in: { type: boolean }

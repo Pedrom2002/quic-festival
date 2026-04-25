@@ -28,8 +28,13 @@ describe("supabaseAdmin", () => {
     const b = supabaseAdmin();
     expect(a).toBe(b);
     expect(createClientMock).toHaveBeenCalledTimes(1);
-    expect(createClientMock).toHaveBeenCalledWith("https://x.supabase.co", "k", {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    expect(createClientMock).toHaveBeenCalledWith(
+      "https://x.supabase.co",
+      "k",
+      expect.objectContaining({
+        auth: { persistSession: false, autoRefreshToken: false },
+        global: expect.objectContaining({ fetch: expect.any(Function) }),
+      }),
+    );
   });
 });

@@ -3,11 +3,9 @@ import { supabaseAdmin } from "@/lib/supabase/admin";
 import { buildFestivalIcs } from "@/lib/ics";
 import { rateLimit } from "@/lib/rate-limit";
 import { ipFromHeaders } from "@/lib/audit";
+import { verifyQrToken } from "@/lib/qr-token";
 
 export const runtime = "nodejs";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(
   req: NextRequest,
@@ -15,7 +13,8 @@ export async function GET(
 ) {
   const { token } = await params;
 
-  if (!UUID_RE.test(token)) {
+  const verified = await verifyQrToken(token);
+  if (!verified.ok) {
     return new NextResponse("Not found", { status: 404 });
   }
 
@@ -23,7 +22,7 @@ export async function GET(
   const rl = await rateLimit(`ics:ip:${ip}`, 30, 60_000);
   if (!rl.ok) {
     return new NextResponse("Too many requests", {
-      status: 429,
+      status: rl.degraded ? 503 : 429,
       headers: { "Retry-After": String(rl.retryAfterSeconds) },
     });
   }
@@ -32,7 +31,7 @@ export async function GET(
   const { data: guest } = await admin
     .from("guests")
     .select("name,token")
-    .eq("token", token)
+    .eq("token", verified.uuid)
     .maybeSingle();
 
   if (!guest) {

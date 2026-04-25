@@ -13,10 +13,14 @@
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "audit": "npm audit --omit=dev --audit-level=high",
-    "verify": "npm run lint && tsc --noEmit && npm run test:cov"
+    "verify": "npm run lint && tsc --noEmit && npm run test:cov",
+    "analyze": "ANALYZE=true next build",
+    "load:rsvp": "k6 run tests/load/rsvp.k6.js",
+    "stryker": "stryker run"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+    "@sentry/nextjs": "^8.45.1",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.47.10",
     "@vercel/analytics": "^2.0.1",
@@ -32,7 +36,10 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.2",
+    "@next/bundle-analyzer": "^16.2.4",
     "@playwright/test": "^1.59.1",
+    "@stryker-mutator/core": "^9.1.1",
+    "@stryker-mutator/vitest-runner": "^9.1.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",

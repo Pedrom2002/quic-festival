@@ -8,8 +8,9 @@ type ScanResult =
   | { kind: "not_found"; token: string }
   | { kind: "error"; message: string };
 
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Aceita UUID puro (legacy) ou string assinada `<uuid>.<expMs>.<sig>`.
+const TOKEN_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\.[0-9]+\.[A-Za-z0-9_-]+)?$/i;
 
 const COOLDOWN_MS = 2500;
 
@@ -83,7 +84,7 @@ export default function QrScanner() {
 
   async function onDecode(raw: string) {
     const token = raw.trim();
-    if (!UUID_RE.test(token)) return;
+    if (!TOKEN_RE.test(token)) return;
 
     const now = Date.now();
     const prev = lastTokenRef.current;

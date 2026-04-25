@@ -1,0 +1,49 @@
+name: rls-contract
+
+# Live RLS contract test against a temporary Supabase project booted via the
+# Supabase CLI. Runs on PRs touching migrations and on a daily schedule.
+#
+# Required secrets: none (uses `supabase start` local stack).
+
+on:
+  pull_request:
+    paths: ["supabase/migrations/**", "tests/rls/**"]
+  schedule:
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rls:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - name: Boot local Supabase
+        run: supabase start
+      - name: Capture local creds
+        id: creds
+        run: |
+          set -e
+          echo "url=$(supabase status -o env | grep '^API_URL=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+          echo "anon=$(supabase status -o env | grep '^ANON_KEY=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+          echo "service=$(supabase status -o env | grep '^SERVICE_ROLE_KEY=' | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+      - name: Apply migrations
+        run: supabase db reset --no-seed
+      - name: Run RLS contract tests
+        env:
+          SUPABASE_RLS_TEST_URL: ${{ steps.creds.outputs.url }}
+          SUPABASE_RLS_TEST_ANON_KEY: ${{ steps.creds.outputs.anon }}
+          SUPABASE_RLS_TEST_SERVICE_KEY: ${{ steps.creds.outputs.service }}
+        run: npx vitest run tests/rls/contract.test.ts
+      - if: always()
+        run: supabase stop

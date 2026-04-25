@@ -13,16 +13,31 @@ function icsEscape(s: string): string {
     .replace(/\r/g, "\\n");
 }
 
-// RFC 5545 line folding: linhas > 75 octetos partem com CRLF + espaço.
+// RFC 5545 §3.1: linhas > 75 octetos partem com CRLF + SPACE. Tem de ser por
+// octetos (UTF-8), não por characters JS (UTF-16 code units), senão acentos
+// PT (`á`, `ç`) podem ficar partidos a meio do code-point e o parser do
+// calendário rejeita ou corrompe a string.
+const ENCODER = new TextEncoder();
+const DECODER = new TextDecoder("utf-8", { fatal: false });
+
 function fold(line: string): string {
-  if (line.length <= 75) return line;
-  const out: string[] = [];
-  let i = 0;
-  while (i < line.length) {
-    out.push((i === 0 ? "" : " ") + line.slice(i, i + 74));
-    i += 74;
+  const bytes = ENCODER.encode(line);
+  if (bytes.length <= 75) return line;
+
+  const chunks: string[] = [];
+  // Primeira linha: 75 octetos. Subsequentes: SPACE + 74 octetos = 75.
+  let offset = 0;
+  let limit = 75;
+  while (offset < bytes.length) {
+    let end = Math.min(offset + limit, bytes.length);
+    // Recua até não estarmos a meio de um code-point UTF-8.
+    // Bytes 0x80-0xBF são continuation bytes; queremos parar antes deles.
+    while (end < bytes.length && (bytes[end]! & 0xc0) === 0x80) end--;
+    chunks.push((offset === 0 ? "" : " ") + DECODER.decode(bytes.subarray(offset, end)));
+    offset = end;
+    limit = 74; // espaço inicial conta para os 75.
   }
-  return out.join("\r\n");
+  return chunks.join("\r\n");
 }
 
 export function buildFestivalIcs(guestName: string): string {

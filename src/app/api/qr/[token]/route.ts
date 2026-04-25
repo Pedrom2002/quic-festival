@@ -2,11 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import QRCode from "qrcode";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { rateLimit } from "@/lib/rate-limit";
+import { ipFromHeaders } from "@/lib/audit";
+import { verifyQrToken } from "@/lib/qr-token";
 
 export const runtime = "nodejs";
-
-const UUID_RE =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export async function GET(
   req: NextRequest,
@@ -14,21 +13,18 @@ export async function GET(
 ) {
   const { token } = await params;
 
-  // Validação cedo para travar lookup à DB com input lixo.
-  if (!UUID_RE.test(token)) {
+  // Aceita token assinado (preferido) ou UUID legacy se secret não definido.
+  const verified = await verifyQrToken(token);
+  if (!verified.ok) {
     return new NextResponse("Not found", { status: 404 });
   }
 
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    req.headers.get("x-real-ip") ??
-    "unknown";
-
+  const ip = ipFromHeaders(req.headers) ?? "unknown";
   // Anti enumeration / DoS: 60 pedidos/min por IP.
   const rl = await rateLimit(`qr:ip:${ip}`, 60, 60_000);
   if (!rl.ok) {
     return new NextResponse("Too many requests", {
-      status: 429,
+      status: rl.degraded ? 503 : 429,
       headers: { "Retry-After": String(rl.retryAfterSeconds) },
     });
   }
@@ -37,14 +33,16 @@ export async function GET(
   const { data: guest } = await admin
     .from("guests")
     .select("token")
-    .eq("token", token)
+    .eq("token", verified.uuid)
     .maybeSingle();
 
   if (!guest) {
     return new NextResponse("Not found", { status: 404 });
   }
 
-  const buffer = await QRCode.toBuffer(guest.token, {
+  // O conteúdo do QR é a string ORIGINAL (assinada) — o scanner valida
+  // no /api/admin/checkin. Para tokens legacy (UUID puro), continua igual.
+  const buffer = await QRCode.toBuffer(token, {
     errorCorrectionLevel: "M",
     margin: 1,
     width: 512,
@@ -55,9 +53,8 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": "image/png",
-      // QR is an entry credential. Private cache only (no CDN), short TTL so a
-      // deleted guest stops being served quickly.
-      "Cache-Control": "private, max-age=300, must-revalidate",
+      // QR é credencial de entrada. Cache privada apenas, TTL curto.
+      "Cache-Control": "private, max-age=60, must-revalidate",
       "Content-Disposition": 'inline; filename="quic-qr.png"',
       "X-Robots-Tag": "noindex, noarchive",
     },

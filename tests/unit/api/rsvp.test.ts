@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const insertResult = { value: { data: { id: "g-1", token: "tok-1" }, error: null } as { data: { id: string; token: string } | null; error: { code?: string } | null } };
+const insertResult = { value: { data: { id: "g-1", token: "11111111-1111-4111-8111-111111111111" }, error: null } as { data: { id: string; token: string } | null; error: { code?: string } | null } };
 const updateMock = vi.fn(async () => ({ data: null, error: null }));
 
 vi.mock("@/lib/supabase/admin", () => ({
@@ -26,7 +26,7 @@ vi.mock("@/lib/rate-limit", () => ({ rateLimit: rateLimitMock }));
 
 beforeEach(() => {
   vi.resetModules();
-  insertResult.value = { data: { id: "g-1", token: "tok-1" }, error: null };
+  insertResult.value = { data: { id: "g-1", token: "11111111-1111-4111-8111-111111111111" }, error: null };
   sendMock.mockClear();
   sendMock.mockResolvedValue({ id: "msg" });
   updateMock.mockClear();
@@ -58,11 +58,11 @@ describe("POST /api/rsvp", () => {
   it("happy path: 200 com token + envia email", async () => {
     const res = await call(validBody);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ token: "tok-1" });
+    expect(await res.json()).toEqual({ token: "11111111-1111-4111-8111-111111111111" });
     expect(sendMock).toHaveBeenCalledWith({
       to: "maria@test.pt",
       name: "Maria Silva",
-      token: "tok-1",
+      token: "11111111-1111-4111-8111-111111111111",
     });
   });
 
@@ -131,7 +131,7 @@ describe("POST /api/rsvp", () => {
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     const res = await call(validBody);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ token: "tok-1" });
+    expect(await res.json()).toEqual({ token: "11111111-1111-4111-8111-111111111111" });
     err.mockRestore();
   });
 
