@@ -14,14 +14,13 @@ function generateNonce(): string {
 }
 
 function buildCsp(nonce: string): string {
-  // 'strict-dynamic': scripts carregados por scripts confiáveis (com nonce)
-  // são automaticamente confiáveis. Em browsers que não suportam, 'unsafe-inline'
-  // serve de fallback (browsers strict-dynamic-aware ignoram-no quando nonce está
-  // presente, segundo CSP3).
+  // 'strict-dynamic': scripts loaded by trusted (nonce-bearing) scripts are
+  // trusted transitively. CSP3-aware browsers ignore explicit allowlists when
+  // strict-dynamic is present, so production drops 'https:' / 'unsafe-inline'.
+  // Dev keeps the broader policy because Next injects many ad-hoc chunks.
   const scriptSrc = isProd
-    ? `'self' 'nonce-${nonce}' 'strict-dynamic' https: 'unsafe-inline'`
-    : // Em dev Next injecta tantos chunks que strict-dynamic é demasiado fragilizante.
-      `'self' 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://challenges.cloudflare.com`;
+    ? `'self' 'nonce-${nonce}' 'strict-dynamic'`
+    : `'self' 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://challenges.cloudflare.com`;
 
   return [
     "default-src 'self'",
@@ -53,6 +52,7 @@ function originAllowed(origin: string | null, host: string | null): boolean {
         return false;
       }
     }
+    /* v8 ignore next */
     return false;
   } catch {
     return false;

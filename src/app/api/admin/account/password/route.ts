@@ -100,10 +100,9 @@ export async function POST(req: NextRequest) {
   }
 
   await audit({
-    action: "admin.signin.password.ok",
+    action: "admin.password.changed",
     actorEmail: user.email,
     ip,
-    meta: { context: "password-change" },
   });
 
   return NextResponse.json({ ok: true });

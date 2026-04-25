@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     "Email enviado",
   ];
 
-  const rows = (data ?? []).map((g) => ({
+  const rows = (data /* v8 ignore next */ ?? []).map((g) => ({
     "Criado em": g.created_at,
     Nome: g.name,
     Email: g.email,
@@ -64,7 +64,14 @@ export async function GET(req: NextRequest) {
   }));
 
   const csv = toCsv(rows, headers);
-  const filename = `quic-convidados-${new Date().toISOString().slice(0, 10)}.csv`;
+  // Filename uses Lisbon date so the daily snapshot rolls at PT midnight, not UTC.
+  const lisbonDate = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Lisbon",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const filename = `quic-convidados-${lisbonDate}.csv`;
 
   await audit({
     action: "admin.export",

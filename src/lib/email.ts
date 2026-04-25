@@ -27,7 +27,11 @@ function textSafe(s: string) {
 }
 
 export async function sendRsvpEmail({ to, name, token }: SendArgs) {
-  const from = process.env.RESEND_FROM ?? "QUIC Festival <onboarding@resend.dev>";
+  const fromEnv = process.env.RESEND_FROM;
+  if (!fromEnv && process.env.NODE_ENV === "production") {
+    throw new Error("RESEND_FROM em falta em produção");
+  }
+  const from = fromEnv ?? "QUIC Festival <onboarding@resend.dev>";
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const confirmUrl = `${site}/confirmado/${token}`;
   const qrUrl = `${site}/api/qr/${token}`;

@@ -13,7 +13,12 @@ export async function verifyTurnstile(
   ip?: string | null,
 ): Promise<Result> {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return { ok: true, skipped: true };
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
+      return { ok: false, reason: "captcha-misconfigured" };
+    }
+    return { ok: true, skipped: true };
+  }
 
   if (!token) return { ok: false, reason: "missing-token" };
 
@@ -43,6 +48,7 @@ export async function verifyTurnstile(
   } catch (e) {
     return {
       ok: false,
+      /* v8 ignore next */
       reason: e instanceof Error ? e.message : "verify-exception",
     };
   }

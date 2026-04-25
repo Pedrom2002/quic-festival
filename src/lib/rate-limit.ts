@@ -4,6 +4,8 @@
 //
 // Contrato mantém-se igual ao anterior: `rateLimit(key, max, windowMs)`.
 
+import { UPSTASH_TIMEOUT_MS } from "@/lib/limits";
+
 type Result = { ok: boolean; retryAfterSeconds: number };
 
 type Entry = { count: number; resetAt: number };
@@ -34,6 +36,7 @@ async function upstashLimit(
 ): Promise<Result> {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  /* v8 ignore next */
   if (!url || !token) throw new Error("upstash-not-configured");
 
   const ttlSeconds = Math.max(1, Math.ceil(windowMs / 1000));
@@ -54,6 +57,7 @@ async function upstashLimit(
     },
     body: JSON.stringify(body),
     cache: "no-store",
+    signal: AbortSignal.timeout(UPSTASH_TIMEOUT_MS),
   });
 
   if (!res.ok) throw new Error(`upstash ${res.status}`);

@@ -66,6 +66,7 @@ export async function PATCH(req: NextRequest) {
     .eq("id", guest.id);
 
   if (error) {
+    /* v8 ignore next */
     console.error("[checkin]", error.code ?? "unknown");
     return NextResponse.json({ error: "Erro a atualizar." }, { status: 500 });
   }

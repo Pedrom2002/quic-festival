@@ -55,10 +55,9 @@ export async function GET(
     status: 200,
     headers: {
       "Content-Type": "image/png",
-      // 1h public cache + 1h SWR. Curto o suficiente para que delete de guest
-      // pare de servir QR num razoável horizonte. Não immutable porque
-      // existência do guest pode mudar.
-      "Cache-Control": "public, max-age=3600, stale-while-revalidate=3600",
+      // QR is an entry credential. Private cache only (no CDN), short TTL so a
+      // deleted guest stops being served quickly.
+      "Cache-Control": "private, max-age=300, must-revalidate",
       "Content-Disposition": 'inline; filename="quic-qr.png"',
       "X-Robots-Tag": "noindex, noarchive",
     },

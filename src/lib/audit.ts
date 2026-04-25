@@ -12,7 +12,9 @@ export type AuditAction =
   | "admin.checkin.uncheck"
   | "admin.resend_email.ok"
   | "admin.resend_email.fail"
-  | "admin.export";
+  | "admin.export"
+  | "admin.password.changed"
+  | "admin.guest.deleted";
 
 export async function audit(args: {
   action: AuditAction;

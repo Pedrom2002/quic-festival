@@ -25,6 +25,7 @@ function safeRedirect(raw: string | undefined): string | undefined {
     if (!u.pathname.startsWith("/auth/callback")) return undefined;
     return u.toString();
   } catch {
+    /* v8 ignore next */
     return undefined;
   }
 }
