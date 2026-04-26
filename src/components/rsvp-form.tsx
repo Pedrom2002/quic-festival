@@ -3,13 +3,12 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { rsvpSchema, type RsvpInput } from "@/lib/validators";
 
-const SUCCESS_MESSAGE =
-  "Inscrição recebida. Vê o teu email para o QR de entrada.";
-
 export default function RsvpForm() {
+  const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [serverInfo, setServerInfo] = useState<string | null>(null);
   const prefersReduced = useReducedMotion();
@@ -49,10 +48,12 @@ export default function RsvpForm() {
         setServerError(json?.error ?? "Algo correu mal. Tenta novamente.");
         return;
       }
-      // Sucesso: mensagem genérica + redirecionamento no email. Caminho
-      // único, independente de novo registo (json.token) ou duplicado
-      // ({ ok: true }), preserva user-enumeration defense.
-      setServerInfo(SUCCESS_MESSAGE);
+      if (json?.token) {
+        router.push(`/confirmado/${json.token}`);
+        return;
+      }
+      // Resposta genérica (e.g. duplicado): não revela se já existia.
+      setServerInfo("Inscrição recebida. Vê o teu email para o QR de entrada.");
     } catch {
       setServerError("Sem ligação. Verifica a internet e tenta outra vez.");
     }

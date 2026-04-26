@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { generateQrDataUrl } from "@/lib/qr";
+import { verifyQrToken } from "@/lib/qr-token";
 import ConfirmadoActions from "@/components/confirmado-actions";
 
 export const dynamic = "force-dynamic";
@@ -15,18 +16,26 @@ export default async function ConfirmadoPage({
 }: {
   params: Promise<{ token: string }>;
 }) {
-  const { token } = await params;
+  const { token: rawToken } = await params;
+
+  // O token na URL pode ser UUID legacy ou string assinada `<uuid>.<exp>.<sig>`.
+  // verifyQrToken devolve sempre o uuid persistido em `guests.token`.
+  const verified = await verifyQrToken(rawToken);
+  if (!verified.ok) notFound();
 
   const admin = supabaseAdmin();
   const { data: guest } = await admin
     .from("guests")
     .select("name,token,companion_count,companion_names")
-    .eq("token", token)
+    .eq("token", verified.uuid)
     .maybeSingle();
 
   if (!guest) notFound();
 
-  const qr = await generateQrDataUrl(guest.token);
+  // O conteúdo do QR é a string ORIGINAL (assinada quando aplicável); o
+  // download/ICS/scan validam a assinatura. /api/qr/[token] e /api/ics
+  // continuam a aceitar o `rawToken` recebido.
+  const qr = await generateQrDataUrl(rawToken);
 
   return (
     <main className="min-h-dvh grid place-items-center bg-[#06182A] text-[#F4EBD6] p-6">
@@ -52,7 +61,7 @@ export default async function ConfirmadoPage({
           </p>
         )}
 
-        <ConfirmadoActions qrDataUrl={qr} token={guest.token} name={guest.name} />
+        <ConfirmadoActions qrDataUrl={qr} token={rawToken} name={guest.name} />
 
         <p className="text-[11px] opacity-60 mt-5 leading-relaxed">
           8 e 9 de Maio · Monsanto Open Air, Lisboa

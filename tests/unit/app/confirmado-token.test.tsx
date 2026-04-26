@@ -19,6 +19,16 @@ vi.mock("@/lib/qr", () => ({
   generateQrDataUrl: vi.fn(async () => "data:fake-qr"),
 }));
 
+vi.mock("@/lib/qr-token", () => ({
+  // Mock devolve sempre ok (token aceite, uuid devolvido). Os testes deste
+  // ficheiro focam-se no render — verificação de token está em qr-token.test.
+  verifyQrToken: vi.fn(async (raw: string) => ({
+    ok: true,
+    uuid: raw.split(".")[0]!,
+    legacy: !raw.includes("."),
+  })),
+}));
+
 const notFoundMock = vi.fn(() => {
   throw new Error("NEXT_NOT_FOUND");
 });
@@ -59,6 +69,17 @@ describe("ConfirmadoPage", () => {
     guestResult.value = { data: null, error: null };
     const { default: Page } = await import("@/app/confirmado/[token]/page");
     await expect(Page({ params: Promise.resolve({ token: "tok" }) })).rejects.toThrow("NEXT_NOT_FOUND");
+    expect(notFoundMock).toHaveBeenCalled();
+  });
+
+  it("token inválido (verifyQrToken retorna ok=false) → notFound()", async () => {
+    const { verifyQrToken } = await import("@/lib/qr-token");
+    (verifyQrToken as unknown as { mockResolvedValueOnce: (v: unknown) => void })
+      .mockResolvedValueOnce({ ok: false, reason: "bad-signature" });
+    const { default: Page } = await import("@/app/confirmado/[token]/page");
+    await expect(
+      Page({ params: Promise.resolve({ token: "bad" }) }),
+    ).rejects.toThrow("NEXT_NOT_FOUND");
     expect(notFoundMock).toHaveBeenCalled();
   });
 });
