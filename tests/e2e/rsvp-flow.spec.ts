@@ -12,12 +12,9 @@ test.describe("RSVP form (mocked /api/rsvp)", () => {
     await expect(page.getByText(/curto|inválidos/i)).toBeVisible();
   });
 
-  test("submit success → /confirmado/{token}", async ({ page }) => {
+  test("submit success → mensagem 'Vê o teu email'", async ({ page }) => {
     await page.route("**/api/rsvp", (route) =>
       route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ token: "tok-123" }) }),
-    );
-    await page.route("**/api/qr/**", (route) =>
-      route.fulfill({ status: 200, contentType: "image/png", body: Buffer.from([0x89, 0x50, 0x4e, 0x47]) }),
     );
     await page.goto("/");
     await page.waitForLoadState("networkidle");
@@ -26,7 +23,11 @@ test.describe("RSVP form (mocked /api/rsvp)", () => {
     await page.getByLabel(/^Telefone/).first().fill("912345678");
     await page.getByLabel(/^NÃO$/).check();
     await page.getByRole("button", { name: /CONFIRMAR/i }).click();
-    await expect(page).toHaveURL(/\/confirmado\/tok-123/, { timeout: 10_000 });
+    await expect(page.getByRole("status")).toContainText(
+      /Inscrição recebida.*Vê o teu email/,
+    );
+    // Form não redireciona — utilizador fica na home.
+    expect(page.url()).not.toMatch(/\/confirmado\//);
   });
 
   test("rate-limit 429 → banner alert", async ({ page }) => {

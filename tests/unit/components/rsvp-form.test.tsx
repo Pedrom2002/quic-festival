@@ -46,15 +46,21 @@ async function fillBasic(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe("RsvpForm", () => {
-  it("submit válido → fetch /api/rsvp + router.push /confirmado/{token}", async () => {
+  it("submit válido → fetch /api/rsvp + status 'Vê o teu email' (sem redirect)", async () => {
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ token: "tok-1" }), { status: 200 }));
     const user = userEvent.setup();
     render(<RsvpForm />);
     await fillBasic(user);
     await user.click(screen.getByLabelText(/^NÃO$/));
     await user.click(screen.getByRole("button", { name: /CONFIRMAR/i }));
-    expect(fetchMock).toHaveBeenCalledWith("/api/rsvp", expect.objectContaining({ method: "POST" }));
-    expect(pushMock).toHaveBeenCalledWith("/confirmado/tok-1");
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/rsvp",
+      expect.objectContaining({ method: "POST" }),
+    );
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      /Inscrição recebida.*Vê o teu email/,
+    );
+    expect(pushMock).not.toHaveBeenCalled();
   });
 
   it("submit com resposta {ok:true} (dedup) → mostra mensagem genérica", async () => {
