@@ -36,6 +36,12 @@ export default async function AdminLayout({
         </a>
         <div className="flex items-center gap-4">
           <a
+            href="/admin/invites"
+            className="text-xs tracking-[.18em] uppercase opacity-70 hover:opacity-100"
+          >
+            Convites
+          </a>
+          <a
             href="/admin/account"
             className="text-xs tracking-[.18em] uppercase opacity-70 hover:opacity-100"
           >

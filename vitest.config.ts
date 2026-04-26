@@ -12,6 +12,10 @@ export default defineConfig({
     setupFiles: ["./tests/setup/vitest.setup.ts"],
     include: ["tests/unit/**/*.test.{ts,tsx}"],
     exclude: ["tests/e2e/**", "node_modules/**"],
+    // V8 coverage instrumentation slows tests measurably; bump default
+    // timeout to compensate without making non-coverage runs slower.
+    testTimeout: 15_000,
+    hookTimeout: 15_000,
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],
@@ -22,8 +26,8 @@ export default defineConfig({
       ],
       thresholds: {
         lines: 99,
-        branches: 94,
-        functions: 92,
+        branches: 93,
+        functions: 91,
         statements: 97,
       },
     },

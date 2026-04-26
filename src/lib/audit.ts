@@ -14,7 +14,10 @@ export type AuditAction =
   | "admin.resend_email.fail"
   | "admin.export"
   | "admin.password.changed"
-  | "admin.guest.deleted";
+  | "admin.guest.deleted"
+  | "admin.invite.created"
+  | "admin.invite.archived"
+  | "admin.invite.unarchived";
 
 export async function audit(args: {
   action: AuditAction;

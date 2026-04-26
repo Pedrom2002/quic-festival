@@ -112,6 +112,36 @@ export async function POST(req: NextRequest) {
   // prevents authenticated callers rewriting ics drift).
   const ics = buildFestivalIcs(data.name);
 
+  // Reclamar lugar do invite (se aplicável). Atómico via SQL function.
+  let invite_link_id: string | null = null;
+  if (data.inviteCode) {
+    const { data: claim, error: claimErr } = await supabase.rpc(
+      "claim_invite_seat",
+      { p_code: data.inviteCode },
+    );
+    if (claimErr) {
+      console.error("[rsvp] invite-claim", claimErr.code ?? "unknown");
+      return NextResponse.json(
+        { error: "Falha a validar convite." },
+        { status: 500 },
+      );
+    }
+    const result = Array.isArray(claim) ? claim[0] : claim;
+    if (!result?.ok) {
+      const reason = (result?.reason as string) ?? "not-found";
+      const map: Record<string, string> = {
+        "not-found": "Convite inválido.",
+        expired: "Convite expirado.",
+        exhausted: "Convite esgotado.",
+      };
+      return NextResponse.json(
+        { error: map[reason] ?? "Convite inválido.", reason },
+        { status: reason === "exhausted" ? 409 : 410 },
+      );
+    }
+    invite_link_id = result.invite_link_id as string;
+  }
+
   const { data: inserted, error: insertError } = await supabase
     .from("guests")
     .insert({
@@ -121,11 +151,16 @@ export async function POST(req: NextRequest) {
       companion_count,
       companion_names,
       ics,
+      invite_link_id,
     })
     .select("id, token")
     .single();
 
   if (insertError) {
+    // Insert falhou após claim — liberta o seat para não consumir slot a toa.
+    if (invite_link_id) {
+      await supabase.rpc("release_invite_seat", { p_invite_link_id: invite_link_id });
+    }
     if (insertError.code === "23505") {
       // Email já registado: devolve o token do registo existente para que o
       // form redirecione para /confirmado/<token>. Concessão deliberada à

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { INVITE_CODE_RE } from "@/lib/invite-code";
 
 const phonePT = /^(\+351\s?)?9\d{8}$/;
 // Letras Unicode (p/ acentos), marcas combinatórias, espaços, apóstrofos, hífens, ponto.
@@ -21,6 +22,11 @@ export const rsvpSchema = z
     acompanhante: z.enum(["sim", "nao"]),
     companion_nome: z.string().trim().max(120).optional().default(""),
     companion_tel: z.string().trim().optional().default(""),
+    inviteCode: z
+      .string()
+      .trim()
+      .regex(INVITE_CODE_RE, "Código de convite inválido")
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.acompanhante === "sim") {
@@ -48,3 +54,15 @@ export const rsvpSchema = z
   });
 
 export type RsvpInput = z.infer<typeof rsvpSchema>;
+
+// Admin: criar/editar invite_links.
+export const inviteCreateSchema = z.object({
+  label: z.string().trim().max(120).optional(),
+  max_uses: z.number().int().min(1).max(1000),
+  expires_at: z.string().datetime().optional(),
+});
+export type InviteCreateInput = z.infer<typeof inviteCreateSchema>;
+
+export const inviteArchiveSchema = z.object({
+  archived: z.boolean(),
+});

@@ -30,16 +30,25 @@ describe("sendRsvpEmail", () => {
     expect(sendMock).toHaveBeenCalledOnce();
     const args = sendMock.mock.calls[0]![0] as {
       from: string; to: string; subject: string; html: string; text: string;
+      attachments: Array<{
+        filename: string; content: Buffer; contentType: string; inlineContentId: string;
+      }>;
     };
     expect(args.from).toBe("QUIC <test@quic.pt>");
     expect(args.to).toBe("u@u.pt");
     expect(args.subject).toMatch(/QUIC Festival 2026/);
-    expect(args.html).toContain("https://quic.pt/api/qr/tok-1");
+    expect(args.html).toContain('src="cid:quic-qr"');
     expect(args.html).toContain("https://quic.pt/confirmado/tok-1");
     expect(args.html).toContain("https://quic.pt/datas.png");
     expect(args.html).toContain("Maria");
     expect(args.text).toContain("Maria");
     expect(args.text).toContain("https://quic.pt/confirmado/tok-1");
+    expect(args.attachments).toHaveLength(1);
+    expect(args.attachments[0]!.filename).toBe("quic-qr.png");
+    expect(args.attachments[0]!.contentType).toBe("image/png");
+    expect(args.attachments[0]!.inlineContentId).toBe("quic-qr");
+    expect(Buffer.isBuffer(args.attachments[0]!.content)).toBe(true);
+    expect(args.attachments[0]!.content.length).toBeGreaterThan(0);
   });
 
   it("escapa HTML no nome", async () => {
@@ -70,7 +79,7 @@ describe("sendRsvpEmail", () => {
     await sendRsvpEmail({ to: "u@u.pt", name: "M", token: "tok" });
     const args = sendMock.mock.calls[0]![0] as { from: string; html: string };
     expect(args.from).toBe("QUIC Festival <onboarding@resend.dev>");
-    expect(args.html).toContain("http://localhost:3000/api/qr/tok");
+    expect(args.html).toContain('src="cid:quic-qr"');
   });
 
   it("rebenta em produção quando RESEND_FROM ausente", async () => {

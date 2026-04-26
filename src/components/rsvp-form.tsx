@@ -7,7 +7,9 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { rsvpSchema, type RsvpInput } from "@/lib/validators";
 
-export default function RsvpForm() {
+type Props = { inviteCode?: string };
+
+export default function RsvpForm({ inviteCode }: Props = {}) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [serverInfo, setServerInfo] = useState<string | null>(null);
@@ -38,10 +40,11 @@ export default function RsvpForm() {
     setServerError(null);
     setServerInfo(null);
     try {
+      const payload = inviteCode ? { ...values, inviteCode } : values;
       const res = await fetch("/api/rsvp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
