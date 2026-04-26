@@ -7,6 +7,7 @@ import { LIMITS, RSVP_OPEN } from "@/lib/limits";
 import { signQrToken } from "@/lib/qr-token";
 import { ipFromHeaders } from "@/lib/audit";
 import { buildFestivalIcs } from "@/lib/ics";
+import { verifyTurnstile, isTurnstileEnabled } from "@/lib/turnstile";
 
 export const runtime = "nodejs";
 
@@ -63,6 +64,18 @@ export async function POST(req: NextRequest) {
 
   const data = parsed.data;
 
+  // Turnstile (anti-bot público). Só corre quando ambas as keys estão
+  // configuradas — em dev/local sem keys, captcha é skipped silenciosamente.
+  if (isTurnstileEnabled()) {
+    const cap = await verifyTurnstile(data.captchaToken, ip);
+    if (!cap.ok) {
+      return NextResponse.json(
+        { error: "Captcha inválido. Recarrega a página." },
+        { status: 400 },
+      );
+    }
+  }
+
   // Anti-spam tiered:
   //   1. per IP — blocks volumetric abuse from one source
   //   2. per (IP, email) — blocks retries of same submission
@@ -111,6 +124,23 @@ export async function POST(req: NextRequest) {
   // every download and naturally tied to the immutable name (0003 trigger
   // prevents authenticated callers rewriting ics drift).
   const ics = buildFestivalIcs(data.name);
+
+  // Pre-check de dedup: se o email já existe, devolve direto o token do
+  // registo existente sem tocar no contador de invites. Evita o "counter
+  // bump fantasma" (sobe + release) quando alguém re-submete via invite.
+  // Race-window: se outro cliente regista o mesmo email entre este SELECT
+  // e o INSERT abaixo, o caminho 23505 trata na mesma.
+  const { data: existingPre } = await supabase
+    .from("guests")
+    .select("token")
+    .eq("email", data.email)
+    .maybeSingle();
+  if (existingPre?.token) {
+    const dupeToken = await signQrToken(existingPre.token);
+    const dupeBody = { token: dupeToken } as const;
+    await cacheIdempotency(supabase, ip, idempotencyKey, dupeBody, 200);
+    return NextResponse.json(dupeBody);
+  }
 
   // Reclamar lugar do invite (se aplicável). Atómico via SQL function.
   let invite_link_id: string | null = null;
@@ -202,11 +232,23 @@ export async function POST(req: NextRequest) {
 
     await supabase
       .from("guests")
-      .update({ email_sent_at: new Date().toISOString() })
+      .update({
+        email_sent_at: new Date().toISOString(),
+        email_attempts: 1,
+      })
       .eq("id", inserted.id);
   } catch (e) {
     console.error("[rsvp] email", e);
-    // Registo ficou gravado. Cron `/api/cron/email-retry` apanha o resto.
+    // Marca tentativa para o cron retentar; admin vê no dashboard se
+    // exceder MAX_EMAIL_ATTEMPTS (3).
+    await supabase
+      .from("guests")
+      .update({
+        email_attempts: 1,
+        email_last_error:
+          e instanceof Error ? e.message.slice(0, 500) : "unknown",
+      })
+      .eq("id", inserted.id);
   }
 
   const responseBody = { token: publicToken };

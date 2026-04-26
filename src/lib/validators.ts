@@ -27,6 +27,7 @@ export const rsvpSchema = z
       .trim()
       .regex(INVITE_CODE_RE, "Código de convite inválido")
       .optional(),
+    captchaToken: z.string().max(2048).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.acompanhante === "sim") {

@@ -15,6 +15,7 @@ export type AuditAction =
   | "admin.export"
   | "admin.password.changed"
   | "admin.guest.deleted"
+  | "admin.guest.exported"
   | "admin.invite.created"
   | "admin.invite.archived"
   | "admin.invite.unarchived";

@@ -16,6 +16,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const MAX_RETRIES_PER_RUN = 25;
+const MAX_EMAIL_ATTEMPTS = 3;
 
 function constantTimeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -45,8 +46,10 @@ async function handle(req: NextRequest) {
 
   const { data: pending, error } = await supabase
     .from("guests")
-    .select("id, email, name, token, created_at")
+    .select("id, email, name, token, created_at, email_attempts")
     .is("email_sent_at", null)
+    .is("email_failed_at", null)
+    .lt("email_attempts", MAX_EMAIL_ATTEMPTS)
     .gte("created_at", cutoff)
     .order("created_at", { ascending: true })
     .limit(MAX_RETRIES_PER_RUN);
@@ -58,18 +61,35 @@ async function handle(req: NextRequest) {
 
   let sent = 0;
   let failed = 0;
+  let abandoned = 0;
   for (const g of pending ?? []) {
+    const nextAttempts = (g.email_attempts ?? 0) + 1;
     try {
       const publicToken = await signQrToken(g.token);
       await sendRsvpEmail({ to: g.email, name: g.name, token: publicToken });
       await supabase
         .from("guests")
-        .update({ email_sent_at: new Date().toISOString() })
+        .update({
+          email_sent_at: new Date().toISOString(),
+          email_attempts: nextAttempts,
+          email_last_error: null,
+        })
         .eq("id", g.id);
       sent++;
     } catch (e) {
-      failed++;
-      console.warn("[cron/email-retry] send", g.id, e instanceof Error ? e.message : e);
+      const msg = e instanceof Error ? e.message : "unknown";
+      const isFinal = nextAttempts >= MAX_EMAIL_ATTEMPTS;
+      await supabase
+        .from("guests")
+        .update({
+          email_attempts: nextAttempts,
+          email_last_error: msg.slice(0, 500),
+          email_failed_at: isFinal ? new Date().toISOString() : null,
+        })
+        .eq("id", g.id);
+      if (isFinal) abandoned++;
+      else failed++;
+      console.warn("[cron/email-retry] send", g.id, msg);
     }
   }
 
@@ -78,6 +98,7 @@ async function handle(req: NextRequest) {
     candidates: pending?.length ?? 0,
     sent,
     failed,
+    abandoned,
   });
 }
 

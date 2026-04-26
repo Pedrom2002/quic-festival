@@ -34,6 +34,8 @@ vi.mock("@/lib/rate-limit", () => ({ rateLimit: rateLimitMock }));
 beforeEach(() => {
   vi.resetModules();
   insertResult.value = { data: { id: "g-1", token: "11111111-1111-4111-8111-111111111111" }, error: null };
+  // Por defeito o pre-dedup SELECT devolve nada → segue para insert.
+  existingLookup.value = { data: null, error: null };
   sendMock.mockClear();
   sendMock.mockResolvedValue({ id: "msg" });
   updateMock.mockClear();

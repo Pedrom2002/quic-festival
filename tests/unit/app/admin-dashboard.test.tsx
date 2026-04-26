@@ -17,6 +17,10 @@ vi.mock("@/components/admin/guests-table", () => ({
   default: ({ initial }: { initial: Record<string, unknown>[] }) => <div data-test="table" data-rows={initial.length} />,
 }));
 
+vi.mock("@/components/admin/live-auto-refresh", () => ({
+  default: () => null,
+}));
+
 beforeEach(() => {
   guestsResult.value = {
     data: [

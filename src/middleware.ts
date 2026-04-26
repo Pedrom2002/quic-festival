@@ -22,17 +22,12 @@ function buildCsp(nonce: string): string {
     ? `'self' 'nonce-${nonce}' 'strict-dynamic'`
     : `'self' 'nonce-${nonce}' 'unsafe-inline' 'unsafe-eval' https://va.vercel-scripts.com https://challenges.cloudflare.com`;
 
-  // style-src: idealmente queríamos remover 'unsafe-inline' por completo, mas
-  // Tailwind v4 + Next CSS injection ainda usa <style> sem nonce em alguns
-  // caminhos. Damos nonce para browsers que o honram; 'unsafe-inline' fica
-  // como fallback.
-  //
-  // Caminho de saída quando Next emitir nonces consistentemente em styled-jsx:
-  //   1. Auditar o output de `next build` por <style> sem nonce.
-  //   2. Mudar styleSrc para `'self' 'nonce-${nonce}' https://fonts.googleapis.com`.
-  //   3. Verificar visualmente todas as páginas em prod-like build.
-  //   4. E2E em chromium + webkit.
-  const styleSrc = `'self' 'nonce-${nonce}' 'unsafe-inline' https://fonts.googleapis.com`;
+  // style-src: nonce + 'self' + Google Fonts. 'unsafe-inline' removido —
+  // Next 16 / Tailwind v4 emite os <style> internos com nonce via meta
+  // `csp-nonce` no layout. Se algo visual quebrar em prod, o caminho é
+  // identificar a tag culpada e refazê-la com nonce explícito, NÃO
+  // re-introduzir unsafe-inline.
+  const styleSrc = `'self' 'nonce-${nonce}' https://fonts.googleapis.com`;
 
   return [
     "default-src 'self'",

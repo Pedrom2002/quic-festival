@@ -6,6 +6,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { rsvpSchema, type RsvpInput } from "@/lib/validators";
+import Turnstile from "@/components/turnstile";
+
+const SITEKEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 type Props = { inviteCode?: string };
 
@@ -13,7 +16,9 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const [serverInfo, setServerInfo] = useState<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const prefersReduced = useReducedMotion();
+  const captchaRequired = !!SITEKEY;
 
   const {
     register,
@@ -39,8 +44,14 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
   async function onSubmit(values: RsvpInput) {
     setServerError(null);
     setServerInfo(null);
+    if (captchaRequired && !captchaToken) {
+      setServerError("Resolve o captcha primeiro.");
+      return;
+    }
     try {
-      const payload = inviteCode ? { ...values, inviteCode } : values;
+      const payload: Record<string, unknown> = { ...values };
+      if (inviteCode) payload.inviteCode = inviteCode;
+      if (captchaToken) payload.captchaToken = captchaToken;
       const res = await fetch("/api/rsvp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -199,10 +210,20 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
         </div>
       </div>
 
+      {captchaRequired && (
+        <motion.div variants={item} className="mt-3">
+          <Turnstile
+            sitekey={SITEKEY}
+            theme="light"
+            onToken={setCaptchaToken}
+          />
+        </motion.div>
+      )}
+
       <motion.button
         type="submit"
         className="btn-submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || (captchaRequired && !captchaToken)}
         aria-busy={isSubmitting}
         variants={item}
       >

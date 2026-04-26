@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import GuestsTable from "@/components/admin/guests-table";
+import LiveAutoRefresh from "@/components/admin/live-auto-refresh";
 
 export const dynamic = "force-dynamic";
 
@@ -8,7 +9,7 @@ export default async function AdminPage() {
   const { data: guests } = await admin
     .from("guests")
     .select(
-      "id,created_at,name,email,phone,companion_count,companion_names,token,checked_in_at,email_sent_at",
+      "id,created_at,name,email,phone,companion_count,companion_names,token,checked_in_at,email_sent_at,email_failed_at,email_attempts",
     )
     .order("created_at", { ascending: false });
 
@@ -21,6 +22,16 @@ export default async function AdminPage() {
   const checkedInToday = rows.filter(
     (g) => g.checked_in_at && g.checked_in_at.slice(0, 10) === today,
   ).length;
+  const totalSeats = total + companions;
+  const checkInRate = totalSeats > 0
+    ? Math.round((checkedIn / totalSeats) * 100)
+    : 0;
+  const emailFailed = rows.filter((g) => g.email_failed_at).length;
+  const lastCheckIn = rows
+    .filter((g) => g.checked_in_at)
+    .map((g) => g.checked_in_at as string)
+    .sort()
+    .at(-1);
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -55,11 +66,26 @@ export default async function AdminPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      <LiveAutoRefresh intervalMs={30_000} />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
         <Stat label="Inscritos" value={total} />
         <Stat label="Acompanhantes" value={companions} />
         <Stat label="Check-ins hoje" value={checkedInToday} accent />
         <Stat label="Pendentes" value={pending} />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+        <Stat label="Taxa de entrada" value={`${checkInRate}%`} />
+        <Stat
+          label="Último scan"
+          value={lastCheckIn ? formatTimeAgo(lastCheckIn) : "—"}
+        />
+        <Stat
+          label="Emails falhados"
+          value={emailFailed}
+          warn={emailFailed > 0}
+        />
       </div>
 
       <GuestsTable initial={rows} />
@@ -67,31 +93,44 @@ export default async function AdminPage() {
   );
 }
 
+function formatTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const s = Math.floor(diff / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}min`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return new Date(iso).toLocaleDateString("pt-PT");
+}
+
 function Stat({
   label,
   value,
   accent,
+  warn,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   accent?: boolean;
+  warn?: boolean;
 }) {
+  const border = accent
+    ? "border-[#FFD27A] bg-[#FFD27A]/10"
+    : warn
+      ? "border-rose-400/60 bg-rose-900/20"
+      : "border-white/15 bg-white/5";
+  const valueColor = accent
+    ? "text-[#FFD27A]"
+    : warn
+      ? "text-rose-300"
+      : "";
   return (
-    <div
-      className={`rounded-2xl border-2 p-4 ${
-        accent
-          ? "border-[#FFD27A] bg-[#FFD27A]/10"
-          : "border-white/15 bg-white/5"
-      }`}
-    >
+    <div className={`rounded-2xl border-2 p-4 ${border}`}>
       <div className="text-xs tracking-[.18em] uppercase opacity-60">
         {label}
       </div>
-      <div
-        className={`text-3xl font-black font-serif mt-1 ${
-          accent ? "text-[#FFD27A]" : ""
-        }`}
-      >
+      <div className={`text-3xl font-black font-serif mt-1 ${valueColor}`}>
         {value}
       </div>
     </div>

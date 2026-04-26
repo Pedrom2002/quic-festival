@@ -7,8 +7,12 @@ const update = vi.fn(() => ({ eq }));
 const fromMock = vi.fn(() => ({
   select: () => ({
     is: () => ({
-      gte: () => ({
-        order: () => ({ limit }),
+      is: () => ({
+        lt: () => ({
+          gte: () => ({
+            order: () => ({ limit }),
+          }),
+        }),
       }),
     }),
   }),
@@ -82,7 +86,9 @@ describe("POST /api/cron/email-retry", () => {
     expect(body.sent).toBe(1);
     expect(body.candidates).toBe(1);
     expect(sendMock).toHaveBeenCalledOnce();
-    expect(update).toHaveBeenCalledWith({ email_sent_at: expect.any(String) });
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({ email_sent_at: expect.any(String), email_attempts: expect.any(Number) }),
+    );
   });
 
   it("happy path via Authorization Bearer", async () => {
@@ -104,8 +110,8 @@ describe("POST /api/cron/email-retry", () => {
   it("falha de send conta como failed mas continua", async () => {
     limit.mockResolvedValue({
       data: [
-        { id: "g1", email: "a@x.pt", name: "A", token: "11111111-1111-4111-8111-111111111111", created_at: "" },
-        { id: "g2", email: "b@x.pt", name: "B", token: "22222222-2222-4222-8222-222222222222", created_at: "" },
+        { id: "g1", email: "a@x.pt", name: "A", token: "11111111-1111-4111-8111-111111111111", created_at: "", email_attempts: 0 },
+        { id: "g2", email: "b@x.pt", name: "B", token: "22222222-2222-4222-8222-222222222222", created_at: "", email_attempts: 0 },
       ],
       error: null,
     });
