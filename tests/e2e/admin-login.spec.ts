@@ -15,6 +15,7 @@ test.describe("Admin login (mocked auth)", () => {
       await route.fulfill({ response: res });
     });
     await page.goto("/admin/login");
+    await page.waitForLoadState("networkidle");
     await page.getByPlaceholder(/exemplo.pt/).fill("a@quic.pt");
     await page.getByPlaceholder("••••••••").fill("password-123456");
     await page.getByRole("button", { name: /^ENTRAR$/i }).click();
@@ -27,6 +28,7 @@ test.describe("Admin login (mocked auth)", () => {
       route.fulfill({ status: 401, contentType: "application/json", body: JSON.stringify({ error: "Credenciais inválidas." }) }),
     );
     await page.goto("/admin/login");
+    await page.waitForLoadState("networkidle");
     await page.getByPlaceholder(/exemplo.pt/).fill("a@quic.pt");
     await page.getByPlaceholder("••••••••").fill("wrong");
     await page.getByRole("button", { name: /^ENTRAR$/i }).click();
@@ -38,6 +40,7 @@ test.describe("Admin login (mocked auth)", () => {
       route.fulfill({ status: 429, contentType: "application/json", body: JSON.stringify({ error: "Demasiadas tentativas." }) }),
     );
     await page.goto("/admin/login");
+    await page.waitForLoadState("networkidle");
     await page.getByPlaceholder(/exemplo.pt/).fill("a@quic.pt");
     await page.getByPlaceholder("••••••••").fill("x");
     await page.getByRole("button", { name: /^ENTRAR$/i }).click();
@@ -49,6 +52,7 @@ test.describe("Admin login (mocked auth)", () => {
       route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) }),
     );
     await page.goto("/admin/login");
+    await page.waitForLoadState("networkidle");
     await page.getByRole("button", { name: /Magic Link/i }).click();
     await page.getByPlaceholder(/exemplo.pt/).fill("a@quic.pt");
     await page.getByRole("button", { name: /ENVIAR MAGIC LINK/i }).click();
@@ -60,6 +64,7 @@ test.describe("Admin login (mocked auth)", () => {
       route.fulfill({ status: 502, contentType: "application/json", body: JSON.stringify({ error: "Não foi possível enviar." }) }),
     );
     await page.goto("/admin/login");
+    await page.waitForLoadState("networkidle");
     await page.getByRole("button", { name: /Magic Link/i }).click();
     await page.getByPlaceholder(/exemplo.pt/).fill("a@quic.pt");
     await page.getByRole("button", { name: /ENVIAR MAGIC LINK/i }).click();

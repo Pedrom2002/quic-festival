@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 test.describe("RSVP form (mocked /api/rsvp)", () => {
   test("validação client-side: nome curto bloqueia submit", async ({ page }) => {
     await page.goto("/");
+    await page.waitForLoadState("networkidle");
     await page.getByLabel(/Nome completo/).fill("x");
     await page.getByLabel(/Email/).fill("a@b.pt");
     await page.getByLabel(/^Telefone/).first().fill("912345678");
@@ -19,6 +20,7 @@ test.describe("RSVP form (mocked /api/rsvp)", () => {
       route.fulfill({ status: 200, contentType: "image/png", body: Buffer.from([0x89, 0x50, 0x4e, 0x47]) }),
     );
     await page.goto("/");
+    await page.waitForLoadState("networkidle");
     await page.getByLabel(/Nome completo/).fill("Maria Silva");
     await page.getByLabel(/Email/).fill("maria@test.pt");
     await page.getByLabel(/^Telefone/).first().fill("912345678");
@@ -32,6 +34,7 @@ test.describe("RSVP form (mocked /api/rsvp)", () => {
       route.fulfill({ status: 429, contentType: "application/json", body: JSON.stringify({ error: "Demasiados pedidos." }) }),
     );
     await page.goto("/");
+    await page.waitForLoadState("networkidle");
     await page.getByLabel(/Nome completo/).fill("Maria Silva");
     await page.getByLabel(/Email/).fill("maria@test.pt");
     await page.getByLabel(/^Telefone/).first().fill("912345678");
@@ -45,6 +48,7 @@ test.describe("RSVP form (mocked /api/rsvp)", () => {
       route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true }) }),
     );
     await page.goto("/");
+    await page.waitForLoadState("networkidle");
     await page.getByLabel(/Nome completo/).fill("Maria Silva");
     await page.getByLabel(/Email/).fill("maria@test.pt");
     await page.getByLabel(/^Telefone/).first().fill("912345678");
@@ -55,6 +59,7 @@ test.describe("RSVP form (mocked /api/rsvp)", () => {
 
   test("acompanhante=sim revela campos extra", async ({ page }) => {
     await page.goto("/");
+    await page.waitForLoadState("networkidle");
     await page.getByLabel(/^SIM$/).check();
     await expect(page.getByLabel(/Nome do acompanhante/)).toBeVisible();
     await expect(page.getByLabel(/Telefone do acompanhante/)).toBeVisible();

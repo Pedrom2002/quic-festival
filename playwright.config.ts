@@ -31,11 +31,16 @@ export default defineConfig({
     },
     {
       // Mobile Safari é a plataforma do scanner; admins vão estar em iPhones.
-      // Suite WebKit corre os mesmos specs (camera-dependent specs ficam
-      // skipped em CI sem permissão).
+      // Em Linux/headless o WebKit hidrata + processa state updates com
+      // notável atraso: subimos `expect.timeout` e `actionTimeout` aqui em
+      // vez de espalhar `await page.waitForTimeout` pelos specs.
       name: "webkit",
+      timeout: 60_000,
+      expect: { timeout: 15_000 },
       use: {
         ...devices["iPhone 14"],
+        actionTimeout: 15_000,
+        navigationTimeout: 30_000,
       },
     },
   ],
