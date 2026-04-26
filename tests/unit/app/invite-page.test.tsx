@@ -35,6 +35,9 @@ vi.mock("@/components/rsvp-form", () => ({
   ),
 }));
 
+vi.mock("@/components/scene", () => ({ default: () => null }));
+vi.mock("@/components/lineup", () => ({ default: () => null }));
+
 beforeEach(() => {
   notFoundMock.mockClear();
   inviteResult.value = {
@@ -51,7 +54,7 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("InvitePage /i/[code]", () => {
-  it("happy: render label + vagas + form", async () => {
+  it("happy: render label + vagas + form (mesmo layout do /)", async () => {
     const { default: Page } = await import("@/app/i/[code]/page");
     const ui = await Page({ params: Promise.resolve({ code: "ABCDEFGHJKMN" }) });
     const { container } = render(ui);
@@ -59,6 +62,10 @@ describe("InvitePage /i/[code]", () => {
     expect(container.textContent).toContain("28");
     const form = container.querySelector('[data-test="rsvp-form"]');
     expect(form?.getAttribute("data-code")).toBe("ABCDEFGHJKMN");
+    expect(container.querySelector(".site-main")).not.toBeNull();
+    expect(container.querySelector(".hero")).not.toBeNull();
+    expect(container.querySelector(".form-wrap")).not.toBeNull();
+    expect(container.querySelector(".invite-banner")).not.toBeNull();
   });
 
   it("código inválido → notFound", async () => {
