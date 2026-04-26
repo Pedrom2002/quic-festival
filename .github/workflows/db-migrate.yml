@@ -25,12 +25,13 @@ jobs:
       - uses: supabase/setup-cli@v1
         with:
           version: latest
-      - name: Validate migrations syntax (db lint via diff dry-run)
+      - name: Validate migrations syntax
         run: |
-          # Boots a local Postgres and applies every migration in order.
-          # Fails the job if any migration errors out.
+          # `supabase db start` boots local Postgres and applies every
+          # migration in supabase/migrations/ on boot. Any SQL error fails
+          # the step. Skip `db reset` because it tries to apply seed.sql
+          # which requires linking, and we have no seed-time dependency.
           supabase db start
-          supabase db reset --linked=false
           supabase db stop
 
   apply:
