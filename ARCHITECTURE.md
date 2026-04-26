@@ -15,28 +15,33 @@ Browser ──► Vercel Edge (middleware: CSP/CSRF/host/body-size) ──► Ne
 
 ## Trust boundaries
 
-- **Public** (`anon` JWT or none): `/`, `/api/rsvp`, `/api/qr/[token]`, `/api/ics/[token]`, `/confirmado/[token]`, `/privacidade`.
-- **Authenticated, non-admin**: blocked by `/admin/(authed)/layout.tsx` allowlist check against `public.admins`.
-- **Admin** (email in `public.admins`): `/admin/*` and `/api/admin/*`.
+- **Public** (`anon` JWT or none): `/`, `/i/[code]`, `/api/rsvp`, `/api/qr/[token]`, `/api/ics/[token]`, `/api/invites/[code]`, `/api/csp-report`, `/api/sentry-tunnel`, `/confirmado/[token]`, `/privacidade`.
+- **Authenticated, non-admin**: blocked by `/admin/(authed)/layout.tsx` allowlist check against `public.admins` (via `auth.uid()` after migration 0003).
+- **Admin** (uid in `public.admins.user_id`): `/admin/*` and `/api/admin/*`.
 - **Service role** (`SUPABASE_SERVICE_ROLE_KEY`): only invoked server-side via `supabaseAdmin()`. Bypasses RLS. Never reaches the client bundle.
+- **Cron** (`CRON_SECRET`): GitHub Actions every 5min hits `/api/cron/email-retry` with `Authorization: Bearer`. Constant-time compare.
 
 ## Data model
 
-`supabase/migrations/0001_init.sql` + `0002_hardening.sql`:
+Migrations 0001 → 0009 in `supabase/migrations/`:
 
-- `guests` (id, name, email unique, phone, companion_*, token unique, checked_in_at, email_sent_at). RLS: admin select/update only; explicit deny on insert/delete for `authenticated`. Service role bypasses for all writes.
-- `admins` (email pk). RLS: deny-all for `anon`/`authenticated`. Looked up via service role for the gate check.
-- `audit_log` (append-only). RLS: deny-all for `anon`/`authenticated`. UPDATE/DELETE triggers raise. Purge function `audit_log_purge(retain_days)` for retention sweep.
+- `guests` (id, name, email unique, phone, companion_*, token unique, checked_in_at, email_sent_at, ics text, invite_link_id FK, email_attempts, email_failed_at, email_last_error). RLS: admin select/update only; column-level immutability via trigger `guests_protect_immutable_columns_trg` for the `authenticated` role (only `checked_in_at`, `email_sent_at`, `ics`, `email_*` mutable). Service role bypasses for all writes.
+- `admins` (email pk, user_id FK to auth.users). RLS deny-all for anon/authenticated; lookups via `is_admin(auth.uid())` SECURITY DEFINER.
+- `audit_log` (append-only). RLS deny-all for anon/authenticated. UPDATE/DELETE triggers raise. Purge `audit_log_purge(retain_days)` scheduled by pg_cron at 04:00 UTC daily (180d retention).
+- `idempotency_keys` (scope, key pk, response, status_code, expires_at). RLS deny-all. Purged hourly via pg_cron + `idempotency_keys_purge()`.
+- `invite_links` (id, code unique, label, max_uses, uses_count, expires_at, archived_at, created_by, created_at). RLS admin-only SELECT; counter atomically updated via `claim_invite_seat(text)` SECURITY DEFINER (row-locked). `release_invite_seat(uuid)` for compensating insert failures.
 
 ## Request flow: RSVP
 
-1. Browser POST `/api/rsvp` with zod-validated body.
+1. Browser POST `/api/rsvp` with zod-validated body (optionally `inviteCode` + `captchaToken` + `Idempotency-Key` header).
 2. Middleware: CSRF (Sec-Fetch-Site / Origin), body-size cap.
-3. Handler: kill-switch (`RSVP_OPEN`), tiered rate-limit (per-IP, per-(IP,email), per-email-global).
-4. Insert via service role. Duplicate email → 200 fake-success (no token, no email).
-5. Send Resend email with QR link `/api/qr/[token]`.
-6. Update `email_sent_at` (best-effort).
-7. Return `{ token }`. Client redirects to `/confirmado/[token]`.
+3. Handler: kill-switch (`RSVP_OPEN`), idempotency cache lookup, Turnstile verify (when enabled), tiered rate-limit (per-IP, per-(IP,email), per-email-global).
+4. Pre-dedup SELECT by email → if exists, sign + return existing token. Avoids consuming an invite seat for re-submits.
+5. If `inviteCode` present: `claim_invite_seat(code)` row-locked → fail 409 (exhausted) / 410 (expired/not-found).
+6. Insert guest via service role with `invite_link_id`, pre-rendered `ics`, `email_attempts=0`. Duplicate-by-PK race → release seat + dedup branch.
+7. Sign QR token (HMAC-SHA256 over `<uuid>.<expMs>`). Send Resend email with QR + ICS as inline attachments.
+8. Update `email_sent_at` + `email_attempts=1` on success; update `email_attempts=1 + email_last_error` on failure (cron retries up to MAX=3, then sets `email_failed_at`).
+9. Cache idempotency response for 1h. Return `{ token }`. Client redirects to `/confirmado/[token]`.
 
 ## Request flow: admin login
 
@@ -67,7 +72,13 @@ Browser ──► Vercel Edge (middleware: CSP/CSRF/host/body-size) ──► Ne
 | CSV injection | prefix `'` on cells starting with `=+-@\t\r` | `src/lib/csv.ts` |
 | ICS injection | RFC 5545 escape | `src/lib/ics.ts` |
 | Open redirect | path-internal allowlist on `/auth/callback?next=` | `src/app/auth/callback/route.ts` |
-| RGPD | `/privacidade` page, `DELETE /api/admin/guest/[id]`, audit retention | `src/app/privacidade`, `api/admin/guest/[id]` |
+| RGPD | `/privacidade` page, `DELETE /api/admin/guest/[id]`, `GET /api/admin/guest/[id]/export` (Art.15), audit retention | `src/app/privacidade`, `api/admin/guest/[id]` |
+| QR token signing | HMAC-SHA256 (uuid.exp.sig), constant-time verify, dual-mode legacy UUID | `src/lib/qr-token.ts` |
+| Invite seats | row-lock + atomic increment via `claim_invite_seat(code)` SECURITY DEFINER | `supabase/migrations/0008_invite_links.sql` |
+| Email retry pipeline | Bounded attempts (MAX=3), `email_failed_at` flag, GH Actions cron 5min | `src/app/api/cron/email-retry`, `supabase/migrations/0009_*.sql` |
+| CSP reporting | `report-uri` + Reporting-Endpoints → `/api/csp-report` (pino logger) | `src/middleware.ts`, `src/app/api/csp-report` |
+| Sentry tunnel | `/api/sentry-tunnel` proxies envelope to ingest, gated on DSN match | `src/app/api/sentry-tunnel` |
+| Logger | pino node-runtime + redact paths (auth, cookies, password, token, email) | `src/lib/logger.ts` |
 
 ## Out of scope
 

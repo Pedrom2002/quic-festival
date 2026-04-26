@@ -35,9 +35,10 @@ paths:
       tags: [public]
       summary: Submeter RSVP
       description: |
-        Cria convidado, dispara email com QR. Idempotente via header
-        `Idempotency-Key`. Devolve 200 fake-success em caso de email duplicado
-        (anti user-enumeration).
+        Cria convidado, dispara email com QR (inline attachment). Idempotente
+        via header `Idempotency-Key`. Email duplicado → re-emite token assinado
+        do registo existente (sem consumir vagas de invite). Aceita
+        `inviteCode` opcional para claim atómico de vaga em invite_links.
       parameters:
         - in: header
           name: Idempotency-Key
@@ -50,7 +51,7 @@ paths:
             schema: { $ref: "#/components/schemas/RsvpInput" }
       responses:
         "200":
-          description: Sucesso (ou duplicate silencioso)
+          description: Sucesso (novo registo OU re-emit em duplicate)
           content:
             application/json:
               schema:
@@ -58,9 +59,73 @@ paths:
                   - { $ref: "#/components/schemas/RsvpSuccess" }
                   - { $ref: "#/components/schemas/RsvpDuplicate" }
         "400": { $ref: "#/components/responses/ValidationError" }
+        "409":
+          description: Convite esgotado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteError" }
+        "410":
+          description: Convite inválido ou expirado
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/InviteError" }
         "413": { description: Body > 64KB }
         "429": { $ref: "#/components/responses/RateLimited" }
         "503": { description: Inscrições encerradas ou rate-limit degraded }
+
+  /api/invites/{code}:
+    get:
+      tags: [public]
+      summary: Metadata pública do invite
+      parameters:
+        - in: path
+          name: code
+          required: true
+          schema: { type: string, pattern: "^[0-9A-HJKMNP-TV-Z]{12}$" }
+      responses:
+        "200":
+          description: Metadata mínima
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  label: { type: string, nullable: true }
+                  seats_total: { type: integer }
+                  seats_remaining: { type: integer }
+                  expires_at: { type: string, format: date-time, nullable: true }
+        "404": { description: Inválido / inexistente / arquivado }
+        "410": { description: Expirado }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /api/csp-report:
+    post:
+      tags: [ops]
+      summary: Receiver de CSP violations (legacy + Reporting API)
+      requestBody:
+        required: true
+        content:
+          application/csp-report: {}
+          application/reports+json: {}
+      responses:
+        "204": { description: Logged }
+        "400": { description: Body inválido }
+        "413": { description: "Body > 16KB" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  /api/sentry-tunnel:
+    post:
+      tags: [ops]
+      summary: Proxy para Sentry ingest (anti ad-blocker)
+      description: 404 quando `SENTRY_DSN` / `NEXT_PUBLIC_SENTRY_DSN` ausente.
+      responses:
+        "200": { description: Forwarded to upstream }
+        "400": { description: Envelope inválido }
+        "403": { description: DSN no envelope difere da configurada }
+        "404": { description: Sentry não configurado }
+        "413": { description: "Body > 256KB" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "502": { description: Upstream Sentry inalcançável }
 
   /api/qr/{token}:
     get:
@@ -216,6 +281,100 @@ paths:
         "200": { description: Eliminado }
         "404": { description: Inexistente }
 
+  /api/admin/guest/{id}/export:
+    get:
+      tags: [admin]
+      summary: RGPD Art.15 — exportar dados do guest
+      security: [{ adminCookie: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: JSON com data subject + audit trail
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  generated_at: { type: string, format: date-time }
+                  generated_by: { type: string }
+                  data_subject:
+                    type: object
+                  audit_trail:
+                    type: array
+                    items: { type: object }
+        "400": { description: ID inválido }
+        "404": { description: Inexistente }
+
+  /api/admin/invites:
+    get:
+      tags: [admin]
+      summary: Listar invites (active + archived)
+      security: [{ adminCookie: [] }]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invites:
+                    type: array
+                    items: { $ref: "#/components/schemas/Invite" }
+    post:
+      tags: [admin]
+      summary: Criar invite
+      security: [{ adminCookie: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [max_uses]
+              properties:
+                label: { type: string, maxLength: 120 }
+                max_uses: { type: integer, minimum: 1, maximum: 1000 }
+                expires_at: { type: string, format: date-time }
+      responses:
+        "201":
+          description: Criado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  code: { type: string }
+        "400": { $ref: "#/components/responses/ValidationError" }
+
+  /api/admin/invites/{id}:
+    patch:
+      tags: [admin]
+      summary: Archive / unarchive invite
+      security: [{ adminCookie: [] }]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [archived]
+              properties:
+                archived: { type: boolean }
+      responses:
+        "200": { description: OK }
+        "400": { description: Pedido inválido }
+
   /api/cron/email-retry:
     post:
       tags: [ops]
@@ -267,6 +426,32 @@ components:
         phone: { type: string, pattern: "^9[0-9]{8}$" }
         acompanhante: { type: string, enum: [sim, nao] }
         companion_nome: { type: string, minLength: 2, maxLength: 120 }
+        inviteCode:
+          type: string
+          pattern: "^[0-9A-HJKMNP-TV-Z]{12}$"
+          description: Crockford base32 sem I/L/O/U
+        captchaToken:
+          type: string
+          maxLength: 2048
+          description: Cloudflare Turnstile response token
+    InviteError:
+      type: object
+      properties:
+        error: { type: string }
+        reason:
+          type: string
+          enum: [not-found, expired, exhausted]
+    Invite:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string }
+        label: { type: string, nullable: true }
+        max_uses: { type: integer }
+        uses_count: { type: integer }
+        expires_at: { type: string, format: date-time, nullable: true }
+        archived_at: { type: string, format: date-time, nullable: true }
+        created_at: { type: string, format: date-time }
     RsvpSuccess:
       type: object
       required: [token]

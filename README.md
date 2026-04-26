@@ -33,8 +33,17 @@ npm run dev -- --turbopack    # turbopack
 ### Supabase
 
 1. Criar projeto em <https://supabase.com>
-2. SQL editor: correr `supabase/migrations/0001_init.sql`
-3. SQL editor: correr `supabase/migrations/0002_hardening.sql` (audit_log + RLS deny-all + immutability triggers + retention helper)
+2. SQL editor: correr todas as migrations em `supabase/migrations/` por ordem (0001 → 0009). Ou via CLI: `supabase link --project-ref <ref>` + `supabase db push --include-all`.
+   - `0001_init.sql` — `guests`, `admins`
+   - `0002_hardening.sql` — `audit_log` + RLS + triggers de imutabilidade + retention helper
+   - `0003_rls_uid_and_columns.sql` — RLS via `auth.uid()` + immutable-columns trigger
+   - `0004_idempotency_keys.sql` — cache de respostas RSVP
+   - `0005_idempotency_keys_cron.sql` — pg_cron purge horário
+   - `0006_audit_retention_cron.sql` — pg_cron purge audit_log (180d)
+   - `0007_guests_ics_cache.sql` — `guests.ics` text col
+   - `0008_invite_links.sql` — sistema de convites
+   - `0009_email_failure_tracking.sql` — `email_attempts/failed_at/last_error`
+3. Activar extension `pg_cron` no dashboard (Database → Extensions). Necessário para 0005 e 0006.
 4. SQL editor: correr `supabase/seed.sql` (insere admins em `public.admins`)
 5. Auth → **URL Configuration**: adicionar `http://localhost:3000/**` e URL prod ao redirect allowlist.
 6. (Opcional) agendar retenção via pg_cron:
@@ -78,7 +87,44 @@ UPSTASH_REDIS_REST_TOKEN
 TURNSTILE_SECRET_KEY               # obrigatório em produção (fail-closed se ausente)
 NEXT_PUBLIC_TURNSTILE_SITE_KEY     # par do anterior
 RSVP_OPEN                          # opcional, "false" desliga /api/rsvp (kill-switch)
+
+# QR signing
+QR_TOKEN_SECRET                    # >= 32 bytes random; emite tokens HMAC-SHA256
+QR_TOKEN_TTL_MS                    # opcional, default ~6 meses
+
+# Cron auth
+CRON_SECRET                        # >= 32 bytes; partilhado entre /api/cron/email-retry e o GitHub Actions cron
+
+# Sentry (opcional)
+SENTRY_DSN                         # server runtime
+NEXT_PUBLIC_SENTRY_DSN             # browser runtime; SDK 10 com tunnel /api/sentry-tunnel
 ```
+
+### Sistema de convites (`/i/<code>`)
+
+Admin gera links com N vagas em `/admin/invites`. Estrutura:
+
+- `invite_links(id, code unique, label, max_uses, uses_count, expires_at, archived_at, created_by, created_at)`
+- `guests.invite_link_id` FK (nullable, audit/dashboard).
+- `claim_invite_seat(text)` SECURITY DEFINER — row-locked atomic increment.
+- `release_invite_seat(uuid)` — usado quando o insert do guest falha após claim.
+
+Fluxo público:
+1. Admin cria invite → recebe link `/i/<CODE>` (12 chars Crockford base32).
+2. Convidado abre `/i/<CODE>` → form pré-tagged com inviteCode.
+3. Submit → `POST /api/rsvp { ..., inviteCode }` → `claim_invite_seat` → insert guest com `invite_link_id` → email QR.
+4. Quando `uses_count == max_uses` → 409 "Convite esgotado." Quando `expires_at < now()` → 410 "Convite expirado."
+
+Concessão UX: dedup do email via invite re-emite token do registo existente sem consumir nova vaga (pre-check antes do claim).
+
+### Email failure tracking
+
+Colunas em `guests`:
+- `email_attempts` — incrementado no envio (RSVP) e em cada retry do cron.
+- `email_failed_at` — flagged quando atinge `MAX_EMAIL_ATTEMPTS = 3`.
+- `email_last_error` — última mensagem do provider (truncada 500 chars).
+
+`/admin` mostra contador de "Emails falhados" (rose card). Cron `/api/cron/email-retry` ignora rows com `email_failed_at` set ou `email_attempts >= 3`.
 
 ## Rotas
 
@@ -88,10 +134,14 @@ RSVP_OPEN                          # opcional, "false" desliga /api/rsvp (kill-s
 |---|---|---|
 | GET | `/` | Landing + form RSVP + lineup |
 | GET | `/privacidade` | Política RGPD |
-| POST | `/api/rsvp` | Insere guest, envia email com QR. Rate-limit 10/min/IP + 3/min/(IP,email) + 5/h/email. Kill-switch via `RSVP_OPEN=false`. |
+| GET | `/i/[code]` | Landing de convite (label + vagas restantes + form RSVP) |
+| POST | `/api/rsvp` | Insere guest, envia email com QR. Aceita `inviteCode` opcional. Turnstile obrigatório se keys setadas. Rate-limit 10/min/IP + 3/min/(IP,email) + 5/h/email. Kill-switch via `RSVP_OPEN=false`. |
 | GET | `/confirmado/[token]` | Página pós-submit com QR (noindex, noarchive) |
-| GET | `/api/qr/[token]` | PNG do QR (rate-limit 60/min/IP, cache `private, max-age=300`) |
-| GET | `/api/ics/[token]` | Calendar `.ics` (rate-limit 30/min/IP, noindex) |
+| GET | `/api/qr/[token]` | PNG do QR (rate-limit 60/min/IP, cache `private, max-age=60`) |
+| GET | `/api/ics/[token]` | Calendar `.ics` (rate-limit 30/min/IP, noindex). Pré-renderizado no insert (col `guests.ics`). |
+| GET | `/api/invites/[code]` | Metadata mínima do invite (label + vagas restantes). Rate-limit 60/min/IP. |
+| POST | `/api/csp-report` | Receiver de CSP violations (legacy + Reporting API). |
+| POST | `/api/sentry-tunnel` | Proxy para ingest Sentry (404 quando DSN unset). |
 | GET | `/api/health` | Verifica Supabase + Resend; 200 ou 503 |
 
 ### Auth
@@ -108,15 +158,20 @@ RSVP_OPEN                          # opcional, "false" desliga /api/rsvp (kill-s
 
 | Método | Rota | Função |
 |---|---|---|
-| GET | `/admin` | Stats + tabela convidados (filter, sort, check-in toggle, resend) |
+| GET | `/admin` | Stats live (auto-refresh 30s) + tabela convidados (filter, sort, check-in toggle, resend) |
 | GET | `/admin/scan` | Scanner QR câmara + input manual de token |
 | GET | `/admin/audit` | Viewer audit_log (filtros, badges) |
+| GET | `/admin/invites` | CRUD de invite links (criar, copiar, arquivar) |
 | GET | `/admin/account` | Mudar password |
 | PATCH | `/api/admin/checkin` | Toggle `checked_in_at` (aceita `id` ou `token`) |
 | POST | `/api/admin/resend-email` | Reenvia email + QR |
 | GET | `/api/admin/export` | CSV stream (com formula injection guard, filename em tz Lisboa) |
 | POST | `/api/admin/account/password` | Mudar password (re-auth com current) |
 | DELETE | `/api/admin/guest/[id]` | RGPD: eliminar inscrição (audit `admin.guest.deleted` com email_hash) |
+| GET | `/api/admin/guest/[id]/export` | RGPD Art.15: JSON com data subject + audit trail (audit `admin.guest.exported`) |
+| GET | `/api/admin/invites` | Lista invites (active + archived) |
+| POST | `/api/admin/invites` | Criar invite (`label`, `max_uses` 1..1000, `expires_at?`) |
+| PATCH | `/api/admin/invites/[id]` | Archive / unarchive |
 
 ## Segurança
 
