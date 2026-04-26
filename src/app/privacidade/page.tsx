@@ -82,9 +82,9 @@ const SECTIONS: {
         exercer envia email para{" "}
         <a
           className="font-bold underline decoration-[#B83F1F] decoration-2 underline-offset-2 hover:bg-[#FFD27A]/40"
-          href="mailto:ola@quic.pt"
+          href="mailto:info@quic.pt"
         >
-          ola@quic.pt
+          info@quic.pt
         </a>{" "}
         com a tua morada de email registada. Respondemos em até{" "}
         <strong>30 dias</strong>.
@@ -99,9 +99,9 @@ const SECTIONS: {
         QUIC · Lisboa, Portugal ·{" "}
         <a
           className="font-bold underline decoration-[#B83F1F] decoration-2 underline-offset-2 hover:bg-[#FFD27A]/40"
-          href="mailto:ola@quic.pt"
+          href="mailto:info@quic.pt"
         >
-          ola@quic.pt
+          info@quic.pt
         </a>
       </p>
     ),
