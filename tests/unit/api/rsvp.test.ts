@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const insertResult = { value: { data: { id: "g-1", token: "11111111-1111-4111-8111-111111111111" }, error: null } as { data: { id: string; token: string } | null; error: { code?: string } | null } };
+const existingLookup = { value: { data: { token: "22222222-2222-4222-8222-222222222222" } as { token: string } | null, error: null } };
 const updateMock = vi.fn(async () => ({ data: null, error: null }));
 
 vi.mock("@/lib/supabase/admin", () => ({
@@ -9,6 +10,12 @@ vi.mock("@/lib/supabase/admin", () => ({
       insert: () => ({
         select: () => ({
           single: async () => insertResult.value,
+        }),
+      }),
+      // dedup branch faz select().eq().maybeSingle()
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () => existingLookup.value,
         }),
       }),
       update: () => ({
@@ -102,8 +109,19 @@ describe("POST /api/rsvp", () => {
     expect(res.headers.get("retry-after")).toBe("7");
   });
 
-  it("dedup email (23505) → 200 sem token (anti enumeration)", async () => {
+  it("dedup email (23505) → 200 com token assinado do registo existente", async () => {
     insertResult.value = { data: null, error: { code: "23505" } };
+    existingLookup.value = { data: { token: "22222222-2222-4222-8222-222222222222" }, error: null };
+    const res = await call(validBody);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.token).toBe("22222222-2222-4222-8222-222222222222");
+    expect(sendMock).not.toHaveBeenCalled();
+  });
+
+  it("dedup race (23505 + lookup vazio) → 200 com fallback {ok:true}", async () => {
+    insertResult.value = { data: null, error: { code: "23505" } };
+    existingLookup.value = { data: null, error: null };
     const res = await call(validBody);
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ ok: true });

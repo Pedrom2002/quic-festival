@@ -30,6 +30,12 @@ vi.mock("@/lib/supabase/admin", () => ({
             single: async () => insertResult.value,
           }),
         }),
+        // dedup branch lookup
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({ data: { token: "22222222-2222-4222-8222-222222222222" }, error: null }),
+          }),
+        }),
         update: () => ({ eq: guestUpdate }),
       };
     },
@@ -92,11 +98,12 @@ describe("POST /api/rsvp — idempotency", () => {
     expect(idempotencyInsert).toHaveBeenCalledOnce();
   });
 
-  it("dedup com Idempotency-Key grava cache do fake-success", async () => {
+  it("dedup com Idempotency-Key grava cache do token re-emitido", async () => {
     insertResult.value = { data: null, error: { code: "23505" } };
     const res = await call({ "idempotency-key": "abcdef-12345678" });
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true });
+    const body = await res.json();
+    expect(body.token).toBe("22222222-2222-4222-8222-222222222222");
     expect(idempotencyInsert).toHaveBeenCalledOnce();
   });
 

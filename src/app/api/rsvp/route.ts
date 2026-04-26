@@ -127,9 +127,26 @@ export async function POST(req: NextRequest) {
 
   if (insertError) {
     if (insertError.code === "23505") {
-      const dupeBody = { ok: true } as const;
-      await cacheIdempotency(supabase, ip, idempotencyKey, dupeBody, 200);
-      return NextResponse.json(dupeBody);
+      // Email já registado: devolve o token do registo existente para que o
+      // form redirecione para /confirmado/<token>. Concessão deliberada à
+      // defesa anti user-enumeration: prioridade é UX consistente para um
+      // utilizador legítimo a re-submeter.
+      const { data: existing } = await supabase
+        .from("guests")
+        .select("token")
+        .eq("email", data.email)
+        .maybeSingle();
+      if (existing?.token) {
+        const dupeToken = await signQrToken(existing.token);
+        const dupeBody = { token: dupeToken } as const;
+        await cacheIdempotency(supabase, ip, idempotencyKey, dupeBody, 200);
+        return NextResponse.json(dupeBody);
+      }
+      // Fallback raro: PK collision sem row visível (race). Mantém resposta
+      // genérica.
+      const fallbackBody = { ok: true } as const;
+      await cacheIdempotency(supabase, ip, idempotencyKey, fallbackBody, 200);
+      return NextResponse.json(fallbackBody);
     }
     console.error("[rsvp] insert", insertError.code ?? "unknown");
     return NextResponse.json(
