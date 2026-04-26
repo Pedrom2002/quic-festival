@@ -64,7 +64,7 @@ describe("InvitesPanel", () => {
   it("create flow: max_uses inválido → erro client-side", async () => {
     const user = userEvent.setup();
     render(<InvitesPanel initialInvites={[]} />);
-    const input = screen.getByLabelText(/Número de vagas/);
+    const input = screen.getByLabelText(/Número de convites/);
     await user.clear(input);
     await user.type(input, "5000");
     await user.click(screen.getByRole("button", { name: /Gerar/i }));

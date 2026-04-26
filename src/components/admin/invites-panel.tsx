@@ -104,8 +104,8 @@ export default function InvitesPanel({
           Convites <em className="not-italic text-[#F2A93C]">/i/</em>
         </h1>
         <p className="text-sm opacity-70 mb-4">
-          Gera um link com N vagas. Partilha o link — cada submissão consome
-          uma vaga.
+          Gera um link com N convites. Partilha o link — cada submissão
+          consome um convite.
         </p>
 
         <form
@@ -128,7 +128,7 @@ export default function InvitesPanel({
             max={1000}
             inputMode="numeric"
             className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[#FFD27A]"
-            aria-label="Número de vagas"
+            aria-label="Número de convites"
           />
           <input
             value={expires}

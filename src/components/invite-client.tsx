@@ -60,7 +60,7 @@ export default function InviteClient({
             {label && <span className="invite-label">{label}</span>}
             {!blocked && (
               <span className="invite-seats">
-                {remaining} {remaining === 1 ? "vaga" : "vagas"} de {total}
+                {remaining} {remaining === 1 ? "convite" : "convites"} de {total}
               </span>
             )}
           </div>
@@ -72,7 +72,7 @@ export default function InviteClient({
           )}
           {exhausted && !expired && (
             <div className="invite-warning" role="alert">
-              Convite esgotado. Já não há vagas neste link.
+              Convite esgotado. Já não há convites neste link.
             </div>
           )}
           {!blocked && <RsvpForm inviteCode={code} />}
