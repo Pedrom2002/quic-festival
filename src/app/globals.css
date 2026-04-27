@@ -230,7 +230,7 @@ h1.title img {
 }
 .datas img {
   display: block;
-  width: min(92%, 560px);
+  width: min(92%, 650px);
   height: auto;
   user-select: none;
   margin: 0 auto;
@@ -607,9 +607,9 @@ fieldset.radio-field legend .req {
 /* ========= LINEUP IMAGE ========= */
 .lineup-img {
   display: block;
-  width: min(92%, 480px);
+  width: min(92%, 560px);
   height: auto;
-  margin: -4rem auto 0;
+  margin: -7rem auto 0;
   user-select: none;
   position: relative;
   z-index: 3;
@@ -617,12 +617,12 @@ fieldset.radio-field legend .req {
 }
 @media (min-width: 600px) {
   .lineup-img {
-    margin-top: -6rem;
+    margin-top: -10rem;
   }
 }
 @media (min-width: 980px) {
   .lineup-img {
-    margin-top: -8rem;
+    margin-top: -13rem;
   }
 }
 
@@ -786,7 +786,7 @@ fieldset.radio-field legend .req {
     width: min(78%, 560px);
   }
   .datas img {
-    width: min(88%, 620px);
+    width: min(88%, 720px);
   }
   .btn-submit {
     font-size: 1.2rem;
