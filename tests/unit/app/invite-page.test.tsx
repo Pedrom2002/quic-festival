@@ -54,12 +54,11 @@ beforeEach(() => {
 afterEach(() => vi.restoreAllMocks());
 
 describe("InvitePage /i/[code]", () => {
-  it("happy: render label + vagas + form (mesmo layout do /)", async () => {
+  it("happy: render label + form (mesmo layout do /)", async () => {
     const { default: Page } = await import("@/app/i/[code]/page");
     const ui = await Page({ params: Promise.resolve({ code: "ABCDEFGHJKMN" }) });
     const { container } = render(ui);
     expect(container.textContent).toContain("Sonae");
-    expect(container.textContent).toContain("28");
     const form = container.querySelector('[data-test="rsvp-form"]');
     expect(form?.getAttribute("data-code")).toBe("ABCDEFGHJKMN");
     expect(container.querySelector(".site-main")).not.toBeNull();
