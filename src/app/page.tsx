@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import Scene from "@/components/scene";
 import Lineup from "@/components/lineup";
+import LangSwitcher from "@/components/lang-switcher";
+import { I18nProvider } from "@/lib/i18n";
 
 export default function HomePage() {
   const [mounted, setMounted] = useState(false);
@@ -12,8 +14,9 @@ export default function HomePage() {
   }, []);
 
   return (
-    <>
+    <I18nProvider>
       <Scene />
+      <LangSwitcher />
 
       <main className={`site-main${mounted ? " in" : ""}`}>
         <section className="hero">
@@ -50,6 +53,6 @@ export default function HomePage() {
           <Lineup />
         </div>
       </main>
-    </>
+    </I18nProvider>
   );
 }

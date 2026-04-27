@@ -770,6 +770,64 @@ fieldset.radio-field legend .req {
   pointer-events: none;
 }
 
+/* ========= LANGUAGE SWITCHER ========= */
+.lang-switcher {
+  position: fixed;
+  top: calc(12px + var(--safe-t));
+  right: 14px;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.35rem 0.6rem;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--paper);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: var(--font-stencil), sans-serif;
+}
+.lang-switcher .lang-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem 0.45rem;
+  min-height: 32px;
+  min-width: 32px;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  color: var(--ink);
+  opacity: 0.45;
+  border-radius: 999px;
+  transition: opacity 0.18s, background 0.18s, color 0.18s;
+}
+.lang-switcher .lang-btn:hover {
+  opacity: 0.85;
+}
+.lang-switcher .lang-btn.active {
+  opacity: 1;
+  background: var(--ink);
+  color: var(--glow);
+}
+.lang-switcher .lang-sep {
+  color: var(--ink);
+  opacity: 0.35;
+  font-weight: 700;
+  font-size: 0.85rem;
+  pointer-events: none;
+}
+@media (min-width: 600px) {
+  .lang-switcher {
+    top: calc(18px + var(--safe-t));
+    right: 22px;
+  }
+  .lang-switcher .lang-btn {
+    font-size: 0.82rem;
+    padding: 0.25rem 0.6rem;
+  }
+}
+
 @media (min-width: 600px) {
   .site-main {
     padding: calc(2rem + var(--safe-t)) 2rem calc(3rem + var(--safe-b));

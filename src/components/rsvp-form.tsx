@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { rsvpSchema, type RsvpInput } from "@/lib/validators";
 import Turnstile from "@/components/turnstile";
+import { useT } from "@/lib/i18n";
 
 const SITEKEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
@@ -19,6 +20,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const prefersReduced = useReducedMotion();
   const captchaRequired = !!SITEKEY;
+  const { t } = useT();
 
   const {
     register,
@@ -45,7 +47,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
     setServerError(null);
     setServerInfo(null);
     if (captchaRequired && !captchaToken) {
-      setServerError("Resolve o captcha primeiro.");
+      setServerError(t("rsvp.error.captcha"));
       return;
     }
     try {
@@ -59,7 +61,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setServerError(json?.error ?? "Algo correu mal. Tenta novamente.");
+        setServerError(json?.error ?? t("rsvp.error.generic"));
         return;
       }
       if (json?.token) {
@@ -67,9 +69,9 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
         return;
       }
       // Resposta genérica (e.g. duplicado): não revela se já existia.
-      setServerInfo("Inscrição recebida. Vê o teu email para o QR de entrada.");
+      setServerInfo(t("rsvp.info.received"));
     } catch {
-      setServerError("Sem ligação. Verifica a internet e tenta outra vez.");
+      setServerError(t("rsvp.error.network"));
     }
   }
 
@@ -99,15 +101,15 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
       viewport={{ once: true, margin: "-10%" }}
     >
       <motion.h2 variants={item}>
-        Confirma a tua <em>presença</em>.
+        {t("rsvp.title.before")}<em>{t("rsvp.title.em")}</em>{t("rsvp.title.after")}
       </motion.h2>
       <motion.p className="subtitle" variants={item}>
-        Precisamos só de alguns dados para te pôr na lista.
+        {t("rsvp.subtitle")}
       </motion.p>
 
       <motion.div className="field" variants={item}>
         <label htmlFor="nome">
-          Nome completo <span className="req">*</span>
+          {t("rsvp.name")} <span className="req">*</span>
         </label>
         <input
           id="nome"
@@ -121,7 +123,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
 
       <motion.div className="field" variants={item}>
         <label htmlFor="tel">
-          Telefone <span className="req">*</span>
+          {t("rsvp.phone")} <span className="req">*</span>
         </label>
         <input
           id="tel"
@@ -136,7 +138,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
 
       <motion.div className="field" variants={item}>
         <label htmlFor="email">
-          Email <span className="req">*</span>
+          {t("rsvp.email")} <span className="req">*</span>
         </label>
         <input
           id="email"
@@ -144,7 +146,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
           inputMode="email"
           autoComplete="email"
           autoCapitalize="off"
-          placeholder="tu@exemplo.pt"
+          placeholder={t("rsvp.email.placeholder")}
           {...register("email")}
         />
         {errors.email && <p className="field-error">{errors.email.message}</p>}
@@ -152,16 +154,16 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
 
       <motion.fieldset className="radio-field" variants={item}>
         <legend>
-          Levas acompanhante? <span className="req">*</span>
+          {t("rsvp.companion.q")} <span className="req">*</span>
         </legend>
         <div className="radio-group" role="radiogroup">
           <label className="sticker-radio yes">
             <input type="radio" value="sim" {...register("acompanhante")} />
-            <span>SIM</span>
+            <span>{t("rsvp.yes")}</span>
           </label>
           <label className="sticker-radio no">
             <input type="radio" value="nao" {...register("acompanhante")} />
-            <span>NÃO</span>
+            <span>{t("rsvp.no")}</span>
           </label>
         </div>
         {errors.acompanhante && (
@@ -178,7 +180,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
       >
         <div className="field">
           <label htmlFor="c-nome">
-            Nome do acompanhante <span className="req">*</span>
+            {t("rsvp.companion.name")} <span className="req">*</span>
           </label>
           <input
             id="c-nome"
@@ -194,7 +196,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
 
         <div className="field">
           <label htmlFor="c-tel">
-            Telefone do acompanhante <span className="req">*</span>
+            {t("rsvp.companion.phone")} <span className="req">*</span>
           </label>
           <input
             id="c-tel"
@@ -227,7 +229,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
         aria-busy={isSubmitting}
         variants={item}
       >
-        <span>{isSubmitting ? "A CONFIRMAR…" : "CONFIRMAR PRESENÇA"}</span>
+        <span>{isSubmitting ? t("rsvp.submitting") : t("rsvp.submit")}</span>
         {isSubmitting ? (
           <svg
             viewBox="0 0 24 24"
@@ -268,14 +270,11 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
       )}
 
       <motion.p className="fine-print" variants={item}>
-        Ao confirmar autorizas o tratamento dos teus dados (nome, email, telefone) apenas para
-        gestão da entrada e comunicação relativa ao QUIC Festival 2026, conforme RGPD. Não
-        partilhamos com terceiros. Para análise de tráfego usamos Vercel Analytics (estatística
-        agregada, sem cookies de marketing). Detalhes em{" "}
+        {t("rsvp.fineprint")}
         <a href="/privacidade" style={{ color: "inherit", textDecoration: "underline" }}>
           /privacidade
         </a>
-        . Pedidos de eliminação:{" "}
+        {t("rsvp.fineprint.delete")}
         <a href="mailto:ola@quic.pt" style={{ color: "inherit", textDecoration: "underline" }}>
           ola@quic.pt
         </a>
