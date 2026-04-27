@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -56,7 +56,7 @@ describe("QrScanner", () => {
     startMock.mockRejectedValueOnce(new Error("camera denied"));
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
-    await new Promise((r) => setTimeout(r, 0));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(await screen.findByText("camera denied")).toBeInTheDocument();
   });
 
@@ -64,7 +64,7 @@ describe("QrScanner", () => {
     startMock.mockRejectedValueOnce("string err");
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
-    await new Promise((r) => setTimeout(r, 0));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(await screen.findByText(/string err/)).toBeInTheDocument();
   });
 
@@ -72,7 +72,7 @@ describe("QrScanner", () => {
     startMock.mockRejectedValueOnce(new Error("denied"));
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
-    await new Promise((r) => setTimeout(r, 0));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(await screen.findByText(/Câmara indisponível/)).toBeInTheDocument();
   });
 
@@ -80,8 +80,34 @@ describe("QrScanner", () => {
     startMock.mockRejectedValueOnce(new Error("denied"));
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
-    await new Promise((r) => setTimeout(r, 0));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(await screen.findByText(/HTTPS/)).toBeInTheDocument();
+  });
+
+  it("callback de decode via câmara → chama onDecode e faz check-in", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true, guest: { name: "AutoScan", companion_count: 0 } }), { status: 200 }),
+    );
+    let capturedOnSuccess: ((t: string) => void) | null = null;
+    startMock.mockImplementationOnce(async (_: unknown, __: unknown, onSuccess: (t: string) => void) => {
+      capturedOnSuccess = onSuccess;
+    });
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    // wait for dynamic import + startMock to complete
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    expect(capturedOnSuccess).not.toBeNull();
+    await act(async () => { capturedOnSuccess!(VALID_TOKEN); });
+    expect((await screen.findAllByText("AutoScan")).length).toBeGreaterThan(0);
+  });
+
+  it("unmount: stop é chamado no cleanup do useEffect", async () => {
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    const { unmount } = render(<QrScanner />);
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    unmount();
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(stopMock).toHaveBeenCalled();
   });
 
   it("manual: token UUID → POST checkin + record ok", async () => {
