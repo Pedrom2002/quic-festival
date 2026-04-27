@@ -40,44 +40,48 @@ afterEach(() => vi.restoreAllMocks());
 const VALID_TOKEN = "11111111-1111-1111-1111-111111111111";
 
 describe("QrScanner", () => {
-  it("inicia scanner ao montar (escolhe back camera)", async () => {
+  it("inicia scanner ao montar com facingMode environment", async () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     await new Promise((r) => setTimeout(r, 0));
-    expect(getCamerasMock).toHaveBeenCalled();
-    expect(startMock).toHaveBeenCalled();
+    expect(startMock).toHaveBeenCalledWith(
+      { facingMode: "environment" },
+      expect.anything(),
+      expect.any(Function),
+      expect.any(Function),
+    );
   });
 
-  it("fallback para primeira câmara se nenhuma 'back'", async () => {
-    getCamerasMock.mockResolvedValueOnce([{ id: "cam-front", label: "Front" }]);
+  it("start falha com Error → mostra mensagem de erro", async () => {
+    startMock.mockRejectedValueOnce(new Error("camera denied"));
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     await new Promise((r) => setTimeout(r, 0));
-    expect(startMock).toHaveBeenCalledWith("cam-front", expect.anything(), expect.any(Function), expect.any(Function));
+    expect(await screen.findByText("camera denied")).toBeInTheDocument();
   });
 
-  it("sem câmaras → mensagem 'Sem câmaras'", async () => {
-    getCamerasMock.mockResolvedValueOnce([]);
-    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
-    render(<QrScanner />);
-    await new Promise((r) => setTimeout(r, 0));
-    expect(await screen.findByText(/Sem câmaras/)).toBeInTheDocument();
-  });
-
-  it("getCameras throw → cameraError", async () => {
-    getCamerasMock.mockRejectedValueOnce(new Error("denied"));
-    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
-    render(<QrScanner />);
-    await new Promise((r) => setTimeout(r, 0));
-    expect(await screen.findByText("denied")).toBeInTheDocument();
-  });
-
-  it("getCameras throw com non-Error → cameraError String", async () => {
-    getCamerasMock.mockRejectedValueOnce("string err");
+  it("start falha com non-Error → mostra String(err)", async () => {
+    startMock.mockRejectedValueOnce("string err");
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     await new Promise((r) => setTimeout(r, 0));
     expect(await screen.findByText(/string err/)).toBeInTheDocument();
+  });
+
+  it("start falha → mostra 'Câmara indisponível'", async () => {
+    startMock.mockRejectedValueOnce(new Error("denied"));
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(await screen.findByText(/Câmara indisponível/)).toBeInTheDocument();
+  });
+
+  it("start falha → mostra dica de permissões HTTPS", async () => {
+    startMock.mockRejectedValueOnce(new Error("denied"));
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(await screen.findByText(/HTTPS/)).toBeInTheDocument();
   });
 
   it("manual: token UUID → POST checkin + record ok", async () => {
