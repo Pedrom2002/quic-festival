@@ -609,8 +609,20 @@ fieldset.radio-field legend .req {
   display: block;
   width: min(92%, 480px);
   height: auto;
-  margin: 1.4rem auto 0;
+  margin: -8rem auto 0;
   user-select: none;
+  position: relative;
+  z-index: 3;
+}
+@media (min-width: 600px) {
+  .lineup-img {
+    margin-top: -12rem;
+  }
+}
+@media (min-width: 980px) {
+  .lineup-img {
+    margin-top: -16rem;
+  }
 }
 
 /* ========= LINEUP (poster style) ========= */
