@@ -6,7 +6,11 @@ test.skip(
   "WebKit/Linux hydration delay; covered manualmente em iPhone real.",
 );
 
-test.describe("RSVP form (mocked /api/rsvp)", () => {
+// Form RSVP só é renderizado em /i/[code] (invite-only). Esses caminhos
+// requerem invite válido no DB → não dá para mockar via page.route. Os
+// fluxos abaixo ficam cobertos por tests unit em tests/unit/components/
+// rsvp-form.test.tsx + tests/unit/api/rsvp*.test.ts.
+test.describe.skip("RSVP form (mocked /api/rsvp)", () => {
   test("validação client-side: nome curto bloqueia submit", async ({ page }) => {
     await page.goto("/");
     await page.waitForLoadState("networkidle");

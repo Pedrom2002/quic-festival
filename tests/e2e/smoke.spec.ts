@@ -1,11 +1,11 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("smoke", () => {
-  test("homepage carrega com form RSVP", async ({ page }) => {
+  test("homepage carrega com bloco invite-only", async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle(/QUIC|Festival/i);
-    await expect(page.getByLabel(/Nome completo/)).toBeVisible();
-    await expect(page.getByLabel(/Email/)).toBeVisible();
+    await expect(page.getByText(/acesso por/i)).toBeVisible();
+    await expect(page.getByText(/convite/i).first()).toBeVisible();
   });
 
   test("admin login redireciona não-autenticado", async ({ page }) => {
