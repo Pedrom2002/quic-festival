@@ -20,7 +20,7 @@ vi.mock("@/lib/supabase/admin", () => ({
 
 beforeEach(() => {
   vi.resetModules();
-  vi.stubEnv("RESEND_API_KEY", "re_test");
+  vi.stubEnv("BREVO_API_KEY", "re_test");
   adminQuery.value = { error: null };
   adminQuery.throwOn = false;
 });
@@ -35,12 +35,12 @@ async function call() {
 }
 
 describe("GET /api/health", () => {
-  it("happy: 200 com supabase=ok resend=ok", async () => {
+  it("happy: 200 com supabase=ok email=ok", async () => {
     const res = await call();
     expect(res.status).toBe(200);
     const json = await res.json();
     expect(json.ok).toBe(true);
-    expect(json.checks).toEqual({ supabase: "ok", resend: "ok" });
+    expect(json.checks).toEqual({ supabase: "ok", email: "ok" });
     expect(res.headers.get("cache-control")).toBe("no-store");
   });
 
@@ -60,11 +60,11 @@ describe("GET /api/health", () => {
     expect(json.checks.supabase).toBe("fail");
   });
 
-  it("RESEND_API_KEY ausente → 503 resend=fail", async () => {
-    vi.stubEnv("RESEND_API_KEY", "");
+  it("BREVO_API_KEY ausente → 503 email=fail", async () => {
+    vi.stubEnv("BREVO_API_KEY", "");
     const res = await call();
     expect(res.status).toBe(503);
     const json = await res.json();
-    expect(json.checks.resend).toBe("fail");
+    expect(json.checks.email).toBe("fail");
   });
 });
