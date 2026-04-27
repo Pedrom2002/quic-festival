@@ -6,8 +6,14 @@ const insertResult = { value: { data: { id: "g1", token: "11111111-1111-4111-811
 const idempotencyInsert = vi.fn(async () => ({ data: null, error: null }));
 const guestUpdate = vi.fn(async () => ({ data: null, error: null }));
 
+const rpcMock = vi.fn(async () => ({
+  data: [{ ok: true, invite_link_id: "inv-1", reason: "ok" }],
+  error: null,
+}));
+
 vi.mock("@/lib/supabase/admin", () => ({
   supabaseAdmin: () => ({
+    rpc: rpcMock,
     from: (table: string) => {
       if (table === "idempotency_keys") {
         return {
@@ -65,6 +71,7 @@ const validBody = {
   email: "maria@test.pt",
   phone: "912345678",
   acompanhante: "nao",
+  inviteCode: "ABCDEFGHJKMN",
 };
 
 async function call(headers: Record<string, string>) {

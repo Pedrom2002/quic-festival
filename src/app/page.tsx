@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Scene from "@/components/scene";
-import RsvpForm from "@/components/rsvp-form";
 import Lineup from "@/components/lineup";
 
 export default function HomePage() {
@@ -37,15 +36,20 @@ export default function HomePage() {
         </section>
 
         <section className="form-wrap fade-up d3">
-          <RsvpForm />
+          <div className="form-card invite-only">
+            <h2>
+              Acesso por <em>convite</em>.
+            </h2>
+            <p className="subtitle">
+              Este evento é fechado. Para confirmar presença precisas de um link de convite enviado pela organização.
+            </p>
+          </div>
         </section>
 
         <div className="lineup-slot lineup-mobile-only fade-up d4">
           <Lineup />
         </div>
       </main>
-
-      <div className="corner-mark">mockup · v0</div>
     </>
   );
 }

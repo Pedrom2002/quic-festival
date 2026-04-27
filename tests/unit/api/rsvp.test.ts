@@ -4,8 +4,14 @@ const insertResult = { value: { data: { id: "g-1", token: "11111111-1111-4111-81
 const existingLookup = { value: { data: { token: "22222222-2222-4222-8222-222222222222" } as { token: string } | null, error: null } };
 const updateMock = vi.fn(async () => ({ data: null, error: null }));
 
+const rpcMock = vi.fn(async () => ({
+  data: [{ ok: true, invite_link_id: "inv-1", reason: "ok" }],
+  error: null,
+}));
+
 vi.mock("@/lib/supabase/admin", () => ({
   supabaseAdmin: () => ({
+    rpc: rpcMock,
     from: () => ({
       insert: () => ({
         select: () => ({
@@ -41,6 +47,11 @@ beforeEach(() => {
   updateMock.mockClear();
   rateLimitMock.mockClear();
   rateLimitMock.mockResolvedValue({ ok: true, retryAfterSeconds: 0 });
+  rpcMock.mockClear();
+  rpcMock.mockResolvedValue({
+    data: [{ ok: true, invite_link_id: "inv-1", reason: "ok" }],
+    error: null,
+  });
 });
 
 afterEach(() => vi.restoreAllMocks());
@@ -50,6 +61,7 @@ const validBody = {
   email: "maria@test.pt",
   phone: "912345678",
   acompanhante: "nao",
+  inviteCode: "ABCDEFGHJKMN",
 };
 
 async function call(body: unknown, headers: Record<string, string> = {}) {
@@ -191,6 +203,16 @@ describe("POST /api/rsvp", () => {
     const res = await call(validBody);
     expect(res.status).toBe(429);
     expect(res.headers.get("retry-after")).toBe("11");
+  });
+
+  it("sem inviteCode → 403 invite-only", async () => {
+    const { inviteCode: _omit, ...noInvite } = validBody;
+    void _omit;
+    const res = await call(noInvite);
+    expect(res.status).toBe(403);
+    const j = await res.json();
+    expect(j.error).toMatch(/convite/i);
+    expect(sendMock).not.toHaveBeenCalled();
   });
 
   it("RSVP_OPEN=false → 503", async () => {

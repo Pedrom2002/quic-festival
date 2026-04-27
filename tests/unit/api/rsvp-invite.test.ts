@@ -118,13 +118,9 @@ describe("POST /api/rsvp — invite claim", () => {
     expect(res.status).toBe(400);
   });
 
-  it("sem inviteCode → fluxo normal sem rpc", async () => {
-    insertSingle.mockResolvedValue({
-      data: { id: "g1", token: VALID_UUID },
-      error: null,
-    });
+  it("sem inviteCode → 403 invite-only (rpc não chamado)", async () => {
     const res = await call(validBody);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(403);
     expect(rpcMock).not.toHaveBeenCalled();
   });
 

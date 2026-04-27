@@ -64,6 +64,14 @@ export async function POST(req: NextRequest) {
 
   const data = parsed.data;
 
+  // Acesso só por convite. RSVP público sem inviteCode → 403.
+  if (!data.inviteCode) {
+    return NextResponse.json(
+      { error: "Inscrição apenas por convite." },
+      { status: 403 },
+    );
+  }
+
   // Turnstile (anti-bot público). Só corre quando ambas as keys estão
   // configuradas — em dev/local sem keys, captcha é skipped silenciosamente.
   if (isTurnstileEnabled()) {
