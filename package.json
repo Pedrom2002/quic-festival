@@ -22,7 +22,7 @@
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
     "@sentry/nextjs": "^10.50.0",
-    "@supabase/ssr": "^0.5.2",
+    "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.47.10",
     "@vercel/analytics": "^2.0.1",
     "framer-motion": "^11.15.0",
@@ -30,9 +30,9 @@
     "next": "16.2.4",
     "pino": "^10.3.1",
     "qrcode": "^1.5.4",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "react-hook-form": "^7.54.2",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "react-hook-form": "^7.74.0",
     "resend": "^4.0.1",
     "zod": "^3.24.1"
   },
