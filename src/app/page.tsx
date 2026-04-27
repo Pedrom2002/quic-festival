@@ -31,7 +31,7 @@ export default function HomePage() {
             />
           </div>
 
-          <div className="lineup-slot lineup-desktop-only">
+          <div className="lineup-slot lineup-desktop-only fade-up d4">
             <Lineup />
           </div>
         </section>
@@ -40,7 +40,7 @@ export default function HomePage() {
           <RsvpForm />
         </section>
 
-        <div className="lineup-slot lineup-mobile-only">
+        <div className="lineup-slot lineup-mobile-only fade-up d4">
           <Lineup />
         </div>
       </main>
