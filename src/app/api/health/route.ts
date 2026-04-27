@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 type Status = "ok" | "fail";
 
 export async function GET() {
-  const checks: Record<string, Status> = { supabase: "fail", resend: "fail" };
+  const checks: Record<string, Status> = { supabase: "fail", email: "fail" };
 
   try {
     const admin = supabaseAdmin();
@@ -20,11 +20,9 @@ export async function GET() {
     /* leave fail */
   }
 
-  // Resend has no public health endpoint; assume ok if API key is set.
-  // Real failures surface via /api/rsvp logs + Sentry once wired up.
-  if (process.env.RESEND_API_KEY) checks.resend = "ok";
+  if (process.env.BREVO_API_KEY) checks.email = "ok";
 
-  const ok = checks.supabase === "ok" && checks.resend === "ok";
+  const ok = checks.supabase === "ok" && checks.email === "ok";
   return NextResponse.json(
     { ok, checks, ts: new Date().toISOString() },
     {

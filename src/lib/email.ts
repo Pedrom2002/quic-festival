@@ -1,13 +1,46 @@
-import { Resend } from "resend";
 import QRCode from "qrcode";
 
-let cached: Resend | null = null;
-function client(): Resend {
-  if (cached) return cached;
-  const key = process.env.RESEND_API_KEY;
-  if (!key) throw new Error("RESEND_API_KEY em falta");
-  cached = new Resend(key);
-  return cached;
+const BREVO_API = "https://api.brevo.com/v3/smtp/email";
+
+function brevoKey(): string {
+  const key = process.env.BREVO_API_KEY;
+  if (!key) throw new Error("BREVO_API_KEY em falta");
+  return key;
+}
+
+type BrevoSender = { name?: string; email: string };
+type BrevoAttachment = { name: string; content: string };
+type BrevoPayload = {
+  sender: BrevoSender;
+  to: { email: string; name?: string }[];
+  subject: string;
+  htmlContent: string;
+  textContent?: string;
+  attachment?: BrevoAttachment[];
+  headers?: Record<string, string>;
+};
+
+function parseFrom(input: string): BrevoSender {
+  const m = input.match(/^\s*(.*?)\s*<([^>]+)>\s*$/);
+  if (m) return { name: m[1] || undefined, email: m[2] };
+  return { email: input.trim() };
+}
+
+async function brevoSend(payload: BrevoPayload): Promise<{ messageId?: string }> {
+  const res = await fetch(BREVO_API, {
+    method: "POST",
+    headers: {
+      "api-key": brevoKey(),
+      "content-type": "application/json",
+      accept: "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Brevo ${res.status}: ${body}`);
+  }
+  return (await res.json()) as { messageId?: string };
 }
 
 type SendArgs = {
@@ -28,11 +61,11 @@ function textSafe(s: string) {
 }
 
 export async function sendRsvpEmail({ to, name, token }: SendArgs) {
-  const fromEnv = process.env.RESEND_FROM;
+  const fromEnv = process.env.EMAIL_FROM ?? process.env.RESEND_FROM;
   if (!fromEnv && process.env.NODE_ENV === "production") {
-    throw new Error("RESEND_FROM em falta em produção");
+    throw new Error("EMAIL_FROM em falta em produção");
   }
-  const from = fromEnv ?? "QUIC Festival <onboarding@resend.dev>";
+  const from = fromEnv ?? "QUIC Festival <noreply@quic.pt>";
   const site = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
   const confirmUrl = `${site}/confirmado/${token}`;
   const logoUrl = `${site}/logo.png`;
@@ -173,25 +206,20 @@ Dúvidas? Responde a este email.
 — QUIC Festival
 `;
 
-  const { data, error } = await client().emails.send({
-    from,
-    to,
+  const sender = parseFrom(from);
+  const data = await brevoSend({
+    sender,
+    to: [{ email: to, name }],
     subject,
-    html,
-    text,
-    attachments: [
+    htmlContent: html,
+    textContent: text,
+    attachment: [
       {
-        filename: "quic-qr.png",
-        content: qrBuffer,
-        contentType: "image/png",
-        inlineContentId: qrCid,
+        name: "quic-qr.png",
+        content: qrBuffer.toString("base64"),
       },
     ],
   });
-
-  if (error) {
-    throw new Error(error.message ?? "Falha a enviar email");
-  }
 
   return data;
 }
