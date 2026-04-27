@@ -8,8 +8,6 @@ import Lineup from "@/components/lineup";
 type Props = {
   code: string;
   label: string | null;
-  remaining: number;
-  total: number;
   expired: boolean;
   exhausted: boolean;
 };
@@ -17,8 +15,6 @@ type Props = {
 export default function InviteClient({
   code,
   label,
-  remaining,
-  total,
   expired,
   exhausted,
 }: Props) {
@@ -58,11 +54,6 @@ export default function InviteClient({
           <div className="invite-banner">
             <span className="invite-tag">Convite</span>
             {label && <span className="invite-label">{label}</span>}
-            {!blocked && (
-              <span className="invite-seats">
-                {remaining} {remaining === 1 ? "convite" : "convites"} de {total}
-              </span>
-            )}
           </div>
 
           {expired && (

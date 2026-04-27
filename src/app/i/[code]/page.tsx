@@ -30,15 +30,12 @@ export default async function InvitePage({
 
   const expired =
     !!invite.expires_at && new Date(invite.expires_at) < new Date();
-  const remaining = Math.max(0, invite.max_uses - invite.uses_count);
-  const exhausted = remaining === 0;
+  const exhausted = invite.uses_count >= invite.max_uses;
 
   return (
     <InviteClient
       code={code}
       label={(invite.label as string | null) ?? null}
-      remaining={remaining}
-      total={invite.max_uses as number}
       expired={expired}
       exhausted={exhausted}
     />
