@@ -119,6 +119,16 @@ describe("AdminLoginPage", () => {
     expect(screen.getByRole("button", { name: /^ENTRAR$/i })).toBeDisabled();
   });
 
+  it("clicar 'Password' volta ao modo password depois de magic link", async () => {
+    const { default: Page } = await import("@/app/admin/login/page");
+    render(<Page />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Magic Link/i }));
+    expect(screen.getByRole("button", { name: /ENVIAR MAGIC LINK/i })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /^Password$/i }));
+    expect(screen.getByRole("button", { name: /^ENTRAR$/i })).toBeInTheDocument();
+  });
+
   it("captcha solved → permite submit", async () => {
     process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY = "k1";
     fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
