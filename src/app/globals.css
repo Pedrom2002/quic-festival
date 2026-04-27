@@ -269,7 +269,11 @@ h1.title img {
   border-radius: 999px;
 }
 .invite-banner .invite-label {
-  font-weight: 800;
+  font-family: var(--font-fraunces), serif;
+  font-weight: 700;
+  font-style: italic;
+  font-size: 1rem;
+  letter-spacing: 0.01em;
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
