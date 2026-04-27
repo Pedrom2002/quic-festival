@@ -24,6 +24,7 @@ export default function QrScanner() {
 
   const lastTokenRef = useRef<{ token: string; at: number } | null>(null);
   const scannerRef = useRef<unknown>(null);
+  const busyRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -35,21 +36,12 @@ export default function QrScanner() {
 
         if (cancelled) return;
 
-        const cams = await Html5Qrcode.getCameras();
-        if (!cams || cams.length === 0) {
-          setCameraError("Sem câmaras disponíveis.");
-          return;
-        }
-
-        const back =
-          cams.find((c) => /back|rear|environment/i.test(c.label)) ?? cams[0];
-
         const inst = new Html5Qrcode(containerId, { verbose: false });
         scanner = inst;
         scannerRef.current = inst;
 
         await inst.start(
-          back.id,
+          { facingMode: "environment" },
           {
             fps: 10,
             qrbox: { width: 260, height: 260 },
@@ -91,7 +83,8 @@ export default function QrScanner() {
     if (prev && prev.token === token && now - prev.at < COOLDOWN_MS) return;
     lastTokenRef.current = { token, at: now };
 
-    if (busy) return;
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
 
     try {
@@ -128,6 +121,7 @@ export default function QrScanner() {
         message: e instanceof Error ? e.message : "Falha de rede.",
       });
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }
