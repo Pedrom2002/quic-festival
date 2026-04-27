@@ -52,8 +52,12 @@ export default function InviteClient({
 
         <section className="form-wrap fade-up d3">
           <div className="invite-banner">
-            <span className="invite-tag">Convite</span>
-            {label && <span className="invite-label">{label}</span>}
+            <span className="invite-tag">Convite Pessoal</span>
+            {label && (
+              <span className="invite-label">
+                Para {label.charAt(0).toUpperCase() + label.slice(1)}
+              </span>
+            )}
           </div>
 
           {expired && (
