@@ -607,9 +607,9 @@ fieldset.radio-field legend .req {
 /* ========= LINEUP IMAGE ========= */
 .lineup-img {
   display: block;
-  width: min(92%, 560px);
+  width: min(92%, 660px);
   height: auto;
-  margin: -7rem auto 0;
+  margin: -10rem auto 0;
   user-select: none;
   position: relative;
   z-index: 3;
@@ -617,12 +617,12 @@ fieldset.radio-field legend .req {
 }
 @media (min-width: 600px) {
   .lineup-img {
-    margin-top: -10rem;
+    margin-top: -13rem;
   }
 }
 @media (min-width: 980px) {
   .lineup-img {
-    margin-top: -13rem;
+    margin-top: -16rem;
   }
 }
 
