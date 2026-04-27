@@ -140,22 +140,6 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
           <div style="height:2px;background:#06111B;opacity:.12;border-radius:2px;"></div>
         </td></tr>
 
-        <!-- INFO 2 COLS -->
-        <tr><td style="padding:22px 30px 26px 30px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td width="50%" valign="top" style="padding-right:8px;">
-                <p style="margin:0;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;font-weight:700;">Local</p>
-                <p style="margin:4px 0 0 0;font-family:Georgia,serif;font-size:17px;font-weight:900;color:#06111B;line-height:1.15;">QUIC<br/>Festival 2026</p>
-              </td>
-              <td width="50%" valign="top" style="padding-left:8px;">
-                <p style="margin:0;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#E8613C;font-weight:700;">Portas</p>
-                <p style="margin:4px 0 0 0;font-family:Georgia,serif;font-size:17px;font-weight:900;color:#06111B;line-height:1.15;">17:00</p>
-              </td>
-            </tr>
-          </table>
-        </td></tr>
-
         <tr><td style="padding:0 30px 26px 30px;font-size:12px;color:#6a7885;line-height:1.55;">
           Se não foste tu a inscrever-te, ignora este email. Dúvidas → responde diretamente.
         </td></tr>
