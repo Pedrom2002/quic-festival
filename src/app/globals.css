@@ -609,7 +609,7 @@ fieldset.radio-field legend .req {
   display: block;
   width: min(92%, 660px);
   height: auto;
-  margin: -5rem auto 0;
+  margin: -7.5rem auto 0;
   user-select: none;
   position: relative;
   z-index: 3;
@@ -617,12 +617,12 @@ fieldset.radio-field legend .req {
 }
 @media (min-width: 600px) {
   .lineup-img {
-    margin-top: -7rem;
+    margin-top: -10rem;
   }
 }
 @media (min-width: 980px) {
   .lineup-img {
-    margin-top: -9rem;
+    margin-top: -12.5rem;
   }
 }
 
