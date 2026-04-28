@@ -12,7 +12,6 @@ const TOKEN_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\.[0-9]+\.[A-Za-z0-9_-]+)?$/i;
 
 const COOLDOWN_MS = 2500;
-const AUTO_CLOSE_MS = 3500;
 
 export default function QrScanner() {
   const containerId = "qr-reader";

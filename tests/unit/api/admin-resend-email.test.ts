@@ -14,7 +14,7 @@ vi.mock("@/lib/rate-limit", () => ({ rateLimit: rateLimitMock }));
 
 const userResult = { value: { data: { user: { email: "a@quic.pt", id: "u-1" } as { email: string; id: string } | null }, error: null } };
 const adminCheck = { value: { email: "a@quic.pt" } as { email: string } | null };
-const guestResult = { value: { data: { id: "g-1", name: "Maria", email: "m@x.pt", token: "tok-1" } as Record<string, unknown> | null, error: null as { code?: string } | null } };
+const guestResult = { value: { data: { id: "g-1", name: "Maria", email: "m@x.pt", token: "11111111-1111-1111-1111-111111111111" } as Record<string, unknown> | null, error: null as { code?: string } | null } };
 const updateMock = vi.fn(async () => ({ error: null }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -49,7 +49,7 @@ beforeEach(() => {
   rateLimitMock.mockResolvedValue({ ok: true, retryAfterSeconds: 0 });
   userResult.value = { data: { user: { email: "a@quic.pt", id: "u-1" } }, error: null };
   adminCheck.value = { email: "a@quic.pt" };
-  guestResult.value = { data: { id: "g-1", name: "Maria", email: "m@x.pt", token: "tok-1" }, error: null };
+  guestResult.value = { data: { id: "g-1", name: "Maria", email: "m@x.pt", token: "11111111-1111-1111-1111-111111111111" }, error: null };
 });
 afterEach(() => vi.restoreAllMocks());
 

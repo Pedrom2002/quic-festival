@@ -98,6 +98,7 @@ describe("rsvpSchema", () => {
         acompanhante: "sim",
         companion_nome: "Ana Silva",
         companion_tel: "912345678",
+        companion_email: "ana@test.pt",
       }).success,
     ).toBe(true);
   });

@@ -27,7 +27,6 @@ type BrevoBody = {
   subject: string;
   htmlContent: string;
   textContent: string;
-  attachment: { name: string; content: string }[];
 };
 
 function bodyOf(call: number): BrevoBody {
@@ -49,15 +48,12 @@ describe("sendRsvpEmail (Brevo)", () => {
     expect(body.sender).toEqual({ name: "QUIC", email: "test@quic.pt" });
     expect(body.to).toEqual([{ email: "u@u.pt", name: "Maria" }]);
     expect(body.subject).toMatch(/QUIC Festival 2026/);
-    expect(body.htmlContent).toContain('src="cid:quic-qr"');
+    expect(body.htmlContent).toContain("https://quic.pt/api/qr/tok-1");
     expect(body.htmlContent).toContain("https://quic.pt/confirmado/tok-1");
     expect(body.htmlContent).toContain("https://quic.pt/datas.png");
     expect(body.htmlContent).toContain("Maria");
     expect(body.textContent).toContain("Maria");
     expect(body.textContent).toContain("https://quic.pt/confirmado/tok-1");
-    expect(body.attachment).toHaveLength(1);
-    expect(body.attachment[0]!.name).toBe("quic-qr.png");
-    expect(body.attachment[0]!.content.length).toBeGreaterThan(0);
   });
 
   it("escapa HTML no nome", async () => {
@@ -89,7 +85,7 @@ describe("sendRsvpEmail (Brevo)", () => {
     await sendRsvpEmail({ to: "u@u.pt", name: "M", token: "tok" });
     const body = bodyOf(0);
     expect(body.sender).toEqual({ name: "QUIC Festival", email: "noreply@quic.pt" });
-    expect(body.htmlContent).toContain('src="cid:quic-qr"');
+    expect(body.htmlContent).toContain("/api/qr/tok");
   });
 
   it("rebenta em produção quando EMAIL_FROM ausente", async () => {

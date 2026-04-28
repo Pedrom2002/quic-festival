@@ -92,20 +92,22 @@ const I18nContext = createContext<I18nValue>({
 
 const STORAGE_KEY = "quic-lang";
 
+function readSavedLang(): Lang {
+  try {
+    const saved = typeof window !== "undefined" ? window.localStorage.getItem(STORAGE_KEY) : null;
+    if (saved === "pt" || saved === "en") return saved;
+  } catch {
+    /* localStorage unavailable */
+  }
+  return "pt";
+}
+
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Lang>("pt");
+  const [lang, setLangState] = useState<Lang>(readSavedLang);
 
   useEffect(() => {
-    try {
-      const saved = window.localStorage.getItem(STORAGE_KEY);
-      if (saved === "pt" || saved === "en") {
-        setLangState(saved);
-        document.documentElement.lang = saved === "pt" ? "pt-PT" : "en";
-      }
-    } catch {
-      /* localStorage unavailable */
-    }
-  }, []);
+    document.documentElement.lang = lang === "pt" ? "pt-PT" : "en";
+  }, [lang]);
 
   const value = useMemo<I18nValue>(
     () => ({

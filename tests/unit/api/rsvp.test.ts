@@ -191,6 +191,7 @@ describe("POST /api/rsvp", () => {
       acompanhante: "sim",
       companion_nome: "Ana Silva",
       companion_tel: "912345677",
+      companion_email: "ana@test.pt",
     });
     expect(res.status).toBe(200);
   });

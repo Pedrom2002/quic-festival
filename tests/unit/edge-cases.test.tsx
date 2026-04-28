@@ -145,8 +145,11 @@ describe("qr-scanner stop chain on unmount", () => {
     }
     vi.doMock("html5-qrcode", () => ({ Html5Qrcode: FakeHtml5Qrcode }));
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
-    const { render } = await import("@testing-library/react");
+    const { render, screen } = await import("@testing-library/react");
+    const userEvent = (await import("@testing-library/user-event")).default;
     const { unmount } = render(<QrScanner />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Scanner/i }));
     await new Promise((r) => setTimeout(r, 0));
     unmount();
     await new Promise((r) => setTimeout(r, 0));

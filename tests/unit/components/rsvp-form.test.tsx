@@ -42,7 +42,7 @@ afterEach(() => vi.restoreAllMocks());
 async function fillBasic(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText(/Nome completo/), "Maria Silva");
   await user.type(document.getElementById("tel") as HTMLInputElement, "912345678");
-  await user.type(screen.getByLabelText(/Email/), "maria@test.pt");
+  await user.type(document.getElementById("email") as HTMLInputElement, "maria@test.pt");
 }
 
 describe("RsvpForm", () => {
