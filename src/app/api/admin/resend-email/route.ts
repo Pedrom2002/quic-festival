@@ -3,6 +3,7 @@ import { z } from "zod";
 import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendRsvpEmail } from "@/lib/email";
+import { signQrToken } from "@/lib/qr-token";
 import { audit, ipFromHeaders } from "@/lib/audit";
 import { rateLimit } from "@/lib/rate-limit";
 import { LIMITS } from "@/lib/limits";
@@ -65,10 +66,11 @@ export async function POST(req: NextRequest) {
   const ip = ipFromHeaders(req.headers);
 
   try {
+    const publicToken = await signQrToken(guest.token);
     await sendRsvpEmail({
       to: guest.email,
       name: guest.name,
-      token: guest.token,
+      token: publicToken,
     });
     await admin
       .from("guests")
