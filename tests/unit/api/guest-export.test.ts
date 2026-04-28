@@ -3,6 +3,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const requireAdminMock = vi.fn();
 vi.mock("@/lib/admin-guard", () => ({ requireAdmin: requireAdminMock }));
 
+const rateLimitMock = vi.fn(async () => ({ ok: true, retryAfterSeconds: 0 }));
+vi.mock("@/lib/rate-limit", () => ({ rateLimit: rateLimitMock }));
+
 const guestResult = { value: { data: null as Record<string, unknown> | null, error: null } };
 const auditResult = { value: { data: [] as Record<string, unknown>[], error: null } };
 
@@ -34,6 +37,8 @@ vi.mock("@/lib/audit", () => ({
 beforeEach(() => {
   requireAdminMock.mockReset();
   auditMock.mockClear();
+  rateLimitMock.mockClear();
+  rateLimitMock.mockResolvedValue({ ok: true, retryAfterSeconds: 0 });
   guestResult.value = { data: null, error: null };
   auditResult.value = { data: [], error: null };
 });
@@ -74,6 +79,20 @@ describe("GET /api/admin/guest/[id]/export", () => {
     });
     const res = await call("11111111-1111-4111-8111-111111111111");
     expect(res.status).toBe(404);
+  });
+
+  it("rate-limit excedido → 429", async () => {
+    requireAdminMock.mockResolvedValue({ ok: true, user: { id: "u1", email: "a@quic.pt" } });
+    rateLimitMock.mockResolvedValueOnce({ ok: false, retryAfterSeconds: 60 });
+    const res = await call("11111111-1111-4111-8111-111111111111");
+    expect(res.status).toBe(429);
+  });
+
+  it("rate-limit degradado → 503", async () => {
+    requireAdminMock.mockResolvedValue({ ok: true, user: { id: "u1", email: "a@quic.pt" } });
+    rateLimitMock.mockResolvedValueOnce({ ok: false, retryAfterSeconds: 30, degraded: true });
+    const res = await call("11111111-1111-4111-8111-111111111111");
+    expect(res.status).toBe(503);
   });
 
   it("happy path: JSON com data_subject + audit_trail + audit chamado", async () => {

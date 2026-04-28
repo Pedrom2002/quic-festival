@@ -12,6 +12,8 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin-guard";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { audit, ipFromHeaders } from "@/lib/audit";
+import { rateLimit } from "@/lib/rate-limit";
+import { LIMITS } from "@/lib/limits";
 
 export const runtime = "nodejs";
 
@@ -23,6 +25,18 @@ export async function GET(
 ) {
   const guard = await requireAdmin();
   if (!guard.ok) return guard.response;
+
+  const rl = await rateLimit(
+    `guestexport:${guard.user.email}`,
+    LIMITS.adminGuestExport.perAdmin.max,
+    LIMITS.adminGuestExport.perAdmin.windowMs,
+  );
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: rl.degraded ? "Serviço indisponível." : "Demasiados pedidos." },
+      { status: rl.degraded ? 503 : 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+    );
+  }
 
   const { id } = await params;
   const idCheck = idSchema.safeParse(id);

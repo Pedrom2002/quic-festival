@@ -34,7 +34,7 @@ function buildCsp(nonce: string): string {
     `script-src ${scriptSrc}`,
     `style-src ${styleSrc}`,
     "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: blob: https:",
+    "img-src 'self' data: blob: https://*.supabase.co https://va.vercel-scripts.com",
     "media-src 'self' blob:",
     "connect-src 'self' https://*.supabase.co https://*.supabase.com https://api.resend.com https://va.vercel-scripts.com https://challenges.cloudflare.com",
     "frame-src 'self' https://challenges.cloudflare.com",

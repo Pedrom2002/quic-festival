@@ -4,6 +4,8 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { sendRsvpEmail } from "@/lib/email";
 import { audit, ipFromHeaders } from "@/lib/audit";
+import { rateLimit } from "@/lib/rate-limit";
+import { LIMITS } from "@/lib/limits";
 
 export const runtime = "nodejs";
 
@@ -30,6 +32,18 @@ export async function POST(req: NextRequest) {
 
   if (!isAdmin) {
     return NextResponse.json({ error: "Sem permissões." }, { status: 403 });
+  }
+
+  const rl = await rateLimit(
+    `resendemail:${user.email}`,
+    LIMITS.adminResendEmail.perAdmin.max,
+    LIMITS.adminResendEmail.perAdmin.windowMs,
+  );
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: rl.degraded ? "Serviço indisponível." : "Demasiados pedidos." },
+      { status: rl.degraded ? 503 : 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+    );
   }
 
   const body = await req.json().catch(() => null);

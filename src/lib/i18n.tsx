@@ -37,6 +37,10 @@ const dictionaries: Record<Lang, Dict> = {
     "rsvp.fineprint":
       "Ao confirmar autorizas o tratamento dos teus dados (nome, email, telefone) apenas para gestão da entrada e comunicação relativa ao QUIC Festival 2026, conforme RGPD. Não partilhamos com terceiros. Para análise de tráfego usamos Vercel Analytics (estatística agregada, sem cookies de marketing). Detalhes em ",
     "rsvp.fineprint.delete": ". Pedidos de eliminação: ",
+    "home.invite.title": "Acesso por ",
+    "home.invite.title.em": "convite",
+    "home.invite.title.after": ".",
+    "home.invite.subtitle": "Este evento é fechado. Para confirmar presença precisas de um link de convite enviado pela organização.",
   },
   en: {
     "rsvp.title.before": "Confirm your ",
@@ -61,6 +65,10 @@ const dictionaries: Record<Lang, Dict> = {
     "rsvp.fineprint":
       "By confirming you authorise processing of your data (name, email, phone) solely to manage entry and communications related to QUIC Festival 2026, in line with GDPR. We do not share with third parties. For traffic analysis we use Vercel Analytics (aggregate, no marketing cookies). Details at ",
     "rsvp.fineprint.delete": ". Deletion requests: ",
+    "home.invite.title": "Access by ",
+    "home.invite.title.em": "invitation",
+    "home.invite.title.after": ".",
+    "home.invite.subtitle": "This is a closed event. To confirm attendance you need an invitation link sent by the organisation.",
   },
 };
 

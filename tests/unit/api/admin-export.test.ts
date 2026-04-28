@@ -6,6 +6,9 @@ vi.mock("@/lib/audit", async () => {
   return { ...actual, audit: auditMock };
 });
 
+const rateLimitMock = vi.fn(async () => ({ ok: true, retryAfterSeconds: 0 }));
+vi.mock("@/lib/rate-limit", () => ({ rateLimit: rateLimitMock }));
+
 const userResult = { value: { data: { user: { email: "a@quic.pt" } as { email: string } | null }, error: null } };
 const adminCheck = { value: { email: "a@quic.pt" } as { email: string } | null };
 const guestsResult = { value: { data: [] as Record<string, unknown>[], error: null as { code?: string } | null } };
@@ -34,6 +37,8 @@ vi.mock("@/lib/supabase/admin", () => ({
 beforeEach(() => {
   vi.resetModules();
   auditMock.mockClear();
+  rateLimitMock.mockClear();
+  rateLimitMock.mockResolvedValue({ ok: true, retryAfterSeconds: 0 });
   userResult.value = { data: { user: { email: "a@quic.pt" } }, error: null };
   adminCheck.value = { email: "a@quic.pt" };
   guestsResult.value = {
@@ -112,5 +117,21 @@ describe("GET /api/admin/export", () => {
   it("filename inclui data ISO", async () => {
     const res = await call();
     expect(res.headers.get("content-disposition")).toMatch(/quic-convidados-\d{4}-\d{2}-\d{2}\.csv/);
+  });
+
+  it("CSV inclui watermark com email do admin", async () => {
+    const res = await call();
+    const csv = await res.text();
+    expect(csv).toContain("a@quic.pt");
+  });
+
+  it("rate-limit excedido → 429", async () => {
+    rateLimitMock.mockResolvedValueOnce({ ok: false, retryAfterSeconds: 60 });
+    expect((await call()).status).toBe(429);
+  });
+
+  it("rate-limit degradado → 503", async () => {
+    rateLimitMock.mockResolvedValueOnce({ ok: false, retryAfterSeconds: 30, degraded: true });
+    expect((await call()).status).toBe(503);
   });
 });

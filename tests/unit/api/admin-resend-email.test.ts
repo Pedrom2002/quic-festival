@@ -9,6 +9,9 @@ vi.mock("@/lib/audit", async () => {
 const sendMock = vi.fn(async () => ({ id: "msg" }));
 vi.mock("@/lib/email", () => ({ sendRsvpEmail: sendMock }));
 
+const rateLimitMock = vi.fn(async () => ({ ok: true, retryAfterSeconds: 0 }));
+vi.mock("@/lib/rate-limit", () => ({ rateLimit: rateLimitMock }));
+
 const userResult = { value: { data: { user: { email: "a@quic.pt", id: "u-1" } as { email: string; id: string } | null }, error: null } };
 const adminCheck = { value: { email: "a@quic.pt" } as { email: string } | null };
 const guestResult = { value: { data: { id: "g-1", name: "Maria", email: "m@x.pt", token: "tok-1" } as Record<string, unknown> | null, error: null as { code?: string } | null } };
@@ -42,6 +45,8 @@ beforeEach(() => {
   sendMock.mockClear();
   sendMock.mockResolvedValue({ id: "msg" });
   updateMock.mockClear();
+  rateLimitMock.mockClear();
+  rateLimitMock.mockResolvedValue({ ok: true, retryAfterSeconds: 0 });
   userResult.value = { data: { user: { email: "a@quic.pt", id: "u-1" } }, error: null };
   adminCheck.value = { email: "a@quic.pt" };
   guestResult.value = { data: { id: "g-1", name: "Maria", email: "m@x.pt", token: "tok-1" }, error: null };
@@ -106,5 +111,15 @@ describe("POST /api/admin/resend-email", () => {
     const err = vi.spyOn(console, "error").mockImplementation(() => {});
     expect((await call({ id: VALID_ID })).status).toBe(502);
     err.mockRestore();
+  });
+
+  it("rate-limit excedido → 429", async () => {
+    rateLimitMock.mockResolvedValueOnce({ ok: false, retryAfterSeconds: 60 });
+    expect((await call({ id: VALID_ID })).status).toBe(429);
+  });
+
+  it("rate-limit degradado → 503", async () => {
+    rateLimitMock.mockResolvedValueOnce({ ok: false, retryAfterSeconds: 30, degraded: true });
+    expect((await call({ id: VALID_ID })).status).toBe(503);
   });
 });

@@ -4,6 +4,8 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { audit, ipFromHeaders } from "@/lib/audit";
 import { verifyQrToken } from "@/lib/qr-token";
+import { rateLimit } from "@/lib/rate-limit";
+import { LIMITS } from "@/lib/limits";
 
 export const runtime = "nodejs";
 
@@ -37,6 +39,19 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Sem permissões." }, { status: 403 });
   }
 
+  const ip = ipFromHeaders(req.headers);
+  const rl = await rateLimit(
+    `checkin:${user.email}`,
+    LIMITS.adminCheckin.perAdmin.max,
+    LIMITS.adminCheckin.perAdmin.windowMs,
+  );
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: rl.degraded ? "Serviço indisponível." : "Demasiados pedidos." },
+      { status: rl.degraded ? 503 : 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+    );
+  }
+
   const body = await req.json().catch(() => null);
   const parsed = bodySchema.safeParse(body);
 
@@ -45,7 +60,6 @@ export async function PATCH(req: NextRequest) {
   }
 
   const { id, token, checked_in } = parsed.data;
-  const ip = ipFromHeaders(req.headers);
 
   // Resolve token assinado (ou UUID legacy) para o `guests.token` persistido.
   let resolvedToken: string | null = null;

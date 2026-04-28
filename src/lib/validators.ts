@@ -21,7 +21,12 @@ export const rsvpSchema = z
       .regex(phonePT, "Telefone PT inválido (9XXXXXXXX)"),
     acompanhante: z.enum(["sim", "nao"]),
     companion_nome: z.string().trim().max(120).optional().default(""),
-    companion_tel: z.string().trim().optional().default(""),
+    companion_tel: z
+      .string()
+      .trim()
+      .refine((v) => v === "" || phonePT.test(v), "Telefone inválido")
+      .optional()
+      .default(""),
     inviteCode: z
       .string()
       .trim()

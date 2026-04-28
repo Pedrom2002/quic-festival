@@ -6,6 +6,9 @@ vi.mock("@/lib/audit", async () => {
   return { ...actual, audit: auditMock };
 });
 
+const rateLimitMock = vi.fn(async () => ({ ok: true, retryAfterSeconds: 0 }));
+vi.mock("@/lib/rate-limit", () => ({ rateLimit: rateLimitMock }));
+
 const userResult = { value: { data: { user: { email: "a@quic.pt" } as { email: string } | null }, error: null } };
 const adminCheck = { value: { email: "a@quic.pt" } as { email: string } | null };
 const guestRow = { value: { id: "g-1", name: "Maria", companion_count: 0, checked_in_at: null as string | null } as Record<string, unknown> | null };
@@ -42,6 +45,8 @@ vi.mock("@/lib/supabase/admin", () => ({
 beforeEach(() => {
   vi.resetModules();
   auditMock.mockClear();
+  rateLimitMock.mockClear();
+  rateLimitMock.mockResolvedValue({ ok: true, retryAfterSeconds: 0 });
   userResult.value = { data: { user: { email: "a@quic.pt" } }, error: null };
   adminCheck.value = { email: "a@quic.pt" };
   guestRow.value = { id: "g-1", name: "Maria", companion_count: 0, checked_in_at: null };
@@ -127,5 +132,17 @@ describe("PATCH /api/admin/checkin", () => {
   it("lookup por token (sem id)", async () => {
     const res = await call({ token: VALID_ID });
     expect(res.status).toBe(200);
+  });
+
+  it("rate-limit excedido → 429", async () => {
+    rateLimitMock.mockResolvedValueOnce({ ok: false, retryAfterSeconds: 60 });
+    const res = await call({ id: VALID_ID });
+    expect(res.status).toBe(429);
+  });
+
+  it("rate-limit degradado → 503", async () => {
+    rateLimitMock.mockResolvedValueOnce({ ok: false, retryAfterSeconds: 30, degraded: true });
+    const res = await call({ id: VALID_ID });
+    expect(res.status).toBe(503);
   });
 });

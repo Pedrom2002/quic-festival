@@ -18,6 +18,10 @@ export const LIMITS = {
     perUserGlobal: { max: 10, windowMs: 60 * 60_000 },
   },
   guestDelete: { perIpUser: { max: 5, windowMs: 60 * 60_000 } },
+  adminCheckin: { perAdmin: { max: 300, windowMs: 5 * 60_000 } },
+  adminResendEmail: { perAdmin: { max: 20, windowMs: 60 * 60_000 } },
+  adminExport: { perAdmin: { max: 10, windowMs: 60 * 60_000 } },
+  adminGuestExport: { perAdmin: { max: 30, windowMs: 60 * 60_000 } },
 } as const;
 
 export const MAX_BODY_BYTES = 64 * 1024;

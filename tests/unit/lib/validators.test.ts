@@ -101,4 +101,9 @@ describe("rsvpSchema", () => {
       }).success,
     ).toBe(true);
   });
+
+  it("companion_tel inválido com acompanhante=nao é rejeitado", () => {
+    const r = rsvpSchema.safeParse({ ...base, companion_tel: "123" });
+    expect(r.success).toBe(false);
+  });
 });

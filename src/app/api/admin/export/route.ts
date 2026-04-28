@@ -3,6 +3,8 @@ import { supabaseServer } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { toCsv } from "@/lib/csv";
 import { audit, ipFromHeaders } from "@/lib/audit";
+import { rateLimit } from "@/lib/rate-limit";
+import { LIMITS } from "@/lib/limits";
 
 export const runtime = "nodejs";
 
@@ -25,6 +27,18 @@ export async function GET(req: NextRequest) {
 
   if (!isAdmin) {
     return NextResponse.json({ error: "Sem permissões." }, { status: 403 });
+  }
+
+  const rl = await rateLimit(
+    `export:${user.email}`,
+    LIMITS.adminExport.perAdmin.max,
+    LIMITS.adminExport.perAdmin.windowMs,
+  );
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: rl.degraded ? "Serviço indisponível." : "Demasiados pedidos." },
+      { status: rl.degraded ? 503 : 429, headers: { "Retry-After": String(rl.retryAfterSeconds) } },
+    );
   }
 
   const { data, error } = await admin
@@ -63,7 +77,10 @@ export async function GET(req: NextRequest) {
     "Email enviado": g.email_sent_at ?? "",
   }));
 
-  const csv = toCsv(rows, headers);
+  const csv =
+    toCsv(rows, headers) +
+    `\r\n"# Exported by ${user.email} at ${new Date().toISOString()}"`;
+
   // Filename uses Lisbon date so the daily snapshot rolls at PT midnight, not UTC.
   const lisbonDate = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Lisbon",

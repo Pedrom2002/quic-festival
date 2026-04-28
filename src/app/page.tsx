@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import Scene from "@/components/scene";
 import Lineup from "@/components/lineup";
 import LangSwitcher from "@/components/lang-switcher";
-import { I18nProvider } from "@/lib/i18n";
+import { I18nProvider, useT } from "@/lib/i18n";
 
-export default function HomePage() {
+function HomeContent() {
+  const { t } = useT();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -14,7 +15,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <I18nProvider>
+    <>
       <Scene />
       <LangSwitcher />
 
@@ -41,11 +42,11 @@ export default function HomePage() {
         <section className="form-wrap fade-up d3">
           <div className="form-card invite-only">
             <h2>
-              Acesso por <em>convite</em>.
+              {t("home.invite.title")}
+              <em>{t("home.invite.title.em")}</em>
+              {t("home.invite.title.after")}
             </h2>
-            <p className="subtitle">
-              Este evento é fechado. Para confirmar presença precisas de um link de convite enviado pela organização.
-            </p>
+            <p className="subtitle">{t("home.invite.subtitle")}</p>
           </div>
         </section>
 
@@ -53,6 +54,14 @@ export default function HomePage() {
           <Lineup />
         </div>
       </main>
+    </>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <I18nProvider>
+      <HomeContent />
     </I18nProvider>
   );
 }

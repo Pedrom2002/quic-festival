@@ -57,19 +57,18 @@ export async function DELETE(
     actorEmail: guard.user.email,
     targetId: guest.id,
     ip,
-    meta: { email_hash: hashEmail(guest.email) },
+    meta: { email_hash: await hashEmail(guest.email) },
   });
 
   return NextResponse.json({ ok: true });
 }
 
-// Stable, non-reversible reference so audit logs keep linkability without
-// retaining the deleted PII verbatim.
-function hashEmail(email: string): string {
-  let h = 2166136261;
-  for (let i = 0; i < email.length; i++) {
-    h ^= email.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return (h >>> 0).toString(16);
+// SHA-256 with project salt — non-reversible but stable for audit linkability.
+async function hashEmail(email: string): Promise<string> {
+  const salt = process.env.AUDIT_SALT ?? "quic-audit";
+  const data = new TextEncoder().encode(`${salt}:${email.toLowerCase()}`);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 }
