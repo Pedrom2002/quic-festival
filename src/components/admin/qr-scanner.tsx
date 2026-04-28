@@ -73,6 +73,14 @@ export default function QrScanner() {
     if (autoCloseRef.current) clearTimeout(autoCloseRef.current);
     modalOpenRef.current = false;
     setModal(null);
+    const inst = scannerRef.current as
+      | { resume?: () => void; getState?: () => number }
+      | null;
+    try {
+      inst?.resume?.();
+    } catch {
+      /* ignore */
+    }
   }
 
   async function onDecode(raw: string) {
@@ -117,6 +125,14 @@ export default function QrScanner() {
       }
 
       modalOpenRef.current = true;
+      const inst = scannerRef.current as
+        | { pause?: (shouldPauseVideo?: boolean) => void }
+        | null;
+      try {
+        inst?.pause?.(true);
+      } catch {
+        /* ignore */
+      }
       setModal(result);
       setHistory((h) => [result, ...h].slice(0, 8));
       buzz();
@@ -126,6 +142,15 @@ export default function QrScanner() {
         kind: "error",
         message: e instanceof Error ? e.message : "Falha de rede.",
       };
+      modalOpenRef.current = true;
+      const inst = scannerRef.current as
+        | { pause?: (shouldPauseVideo?: boolean) => void }
+        | null;
+      try {
+        inst?.pause?.(true);
+      } catch {
+        /* ignore */
+      }
       setModal(result);
       setHistory((h) => [result, ...h].slice(0, 8));
     } finally {
