@@ -268,7 +268,7 @@ export async function POST(req: NextRequest) {
       .insert({
         name: data.companion_nome,
         email: data.companion_email,
-        phone: data.phone,
+        phone: data.companion_tel || data.phone,
         companion_count: 0,
         companion_names: [],
         companion_emails: [],
@@ -278,6 +278,9 @@ export async function POST(req: NextRequest) {
       .select("id, token")
       .single();
 
+    if (compInsertError) {
+      console.error("[rsvp] companion insert error", JSON.stringify(compInsertError));
+    }
     if (!compInsertError && compInserted) {
       const compPublicToken = await signQrToken(compInserted.token);
       try {
@@ -304,8 +307,6 @@ export async function POST(req: NextRequest) {
           })
           .eq("id", compInserted.id);
       }
-    } else if (compInsertError && compInsertError.code !== "23505") {
-      console.error("[rsvp] companion insert", compInsertError.code ?? "unknown");
     }
   }
 

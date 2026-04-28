@@ -9,14 +9,12 @@ function brevoKey(): string {
 }
 
 type BrevoSender = { name?: string; email: string };
-type BrevoAttachment = { name: string; content: string };
 type BrevoPayload = {
   sender: BrevoSender;
   to: { email: string; name?: string }[];
   subject: string;
   htmlContent: string;
   textContent?: string;
-  attachment?: BrevoAttachment[];
   headers?: Record<string, string>;
 };
 
@@ -70,15 +68,13 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
   const confirmUrl = `${site}/confirmado/${token}`;
   const logoUrl = `${site}/logo.png`;
 
-  // QR como inline attachment (cid:) — evita Gmail Image Proxy + Cache-Control
-  // bloqueios e funciona offline em todos os clientes de email.
   const qrBuffer = await QRCode.toBuffer(token, {
     errorCorrectionLevel: "M",
     margin: 1,
     width: 512,
     color: { dark: "#06111B", light: "#F4EBD6" },
   });
-  const qrCid = "quic-qr";
+  const qrDataUrl = `data:image/png;base64,${qrBuffer.toString("base64")}`;
 
   const subject = "Tás dentro · QUIC Festival 2026";
   const preheader = "Mostra o QR à entrada · QUIC Festival 2026, Lisboa";
@@ -149,7 +145,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
         <tr><td align="center" style="padding:22px 30px 6px 30px;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="border-radius:18px;background:#FFFFFF;border:2px solid #06111B;">
             <tr><td style="padding:14px;">
-              <img src="cid:${qrCid}" alt="QR de entrada QUIC Festival" width="240" height="240" style="display:block;width:240px;height:240px;border:0;outline:none;text-decoration:none;" />
+              <img src="${qrDataUrl}" alt="QR de entrada QUIC Festival" width="240" height="240" style="display:block;width:240px;height:240px;border:0;outline:none;text-decoration:none;" />
             </td></tr>
           </table>
           <p style="margin:10px 0 0 0;font-family:Georgia,serif;font-style:italic;font-size:13px;color:#6a7885;">entrada pessoal · não partilhes</p>
@@ -213,12 +209,6 @@ Dúvidas? Responde a este email.
     subject,
     htmlContent: html,
     textContent: text,
-    attachment: [
-      {
-        name: "quic-qr.png",
-        content: qrBuffer.toString("base64"),
-      },
-    ],
   });
 
   return data;
