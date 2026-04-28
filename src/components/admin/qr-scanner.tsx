@@ -16,6 +16,7 @@ const AUTO_CLOSE_MS = 3500;
 
 export default function QrScanner() {
   const containerId = "qr-reader";
+  const [scanning, setScanning] = useState(false);
   const [modal, setModal] = useState<ScanResult | null>(null);
   const [history, setHistory] = useState<ScanResult[]>([]);
   const [busy, setBusy] = useState(false);
@@ -28,6 +29,8 @@ export default function QrScanner() {
   const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (!scanning) return;
+
     let cancelled = false;
     let scanner: unknown;
 
@@ -63,7 +66,7 @@ export default function QrScanner() {
       if (inst) inst.stop().then(() => inst.clear()).catch(() => {});
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [scanning]);
 
   function dismiss() {
     if (autoCloseRef.current) clearTimeout(autoCloseRef.current);
@@ -115,10 +118,6 @@ export default function QrScanner() {
       setHistory((h) => [result, ...h].slice(0, 8));
       buzz();
 
-      if (autoCloseRef.current) clearTimeout(autoCloseRef.current);
-      if (result.kind === "ok") {
-        autoCloseRef.current = setTimeout(() => setModal(null), AUTO_CLOSE_MS);
-      }
     } catch (e) {
       const result: ScanResult = {
         kind: "error",
@@ -194,9 +193,6 @@ export default function QrScanner() {
               {modal.kind === "ok" ? "Próximo" : "Fechar"}
             </button>
 
-            {modal.kind === "ok" && (
-              <p className="text-[11px] opacity-40 mt-3">Fecha automaticamente…</p>
-            )}
           </div>
         </div>
       )}
@@ -205,6 +201,16 @@ export default function QrScanner() {
       <div className="grid gap-5 max-w-xl mx-auto">
         <div className="rounded-2xl overflow-hidden border-2 border-[#FFD27A]/40 bg-black aspect-square relative">
           <div id={containerId} className="absolute inset-0" />
+          {!scanning && (
+            <div className="absolute inset-0 grid place-items-center bg-black/80">
+              <button
+                onClick={() => setScanning(true)}
+                className="rounded-full border-2 border-[#FFD27A] text-[#FFD27A] px-8 py-4 text-sm tracking-[.18em] uppercase font-black hover:bg-[#FFD27A] hover:text-[#06111B] transition"
+              >
+                Iniciar Scanner
+              </button>
+            </div>
+          )}
           {busy && (
             <div className="absolute inset-0 grid place-items-center pointer-events-none">
               <div className="w-10 h-10 rounded-full border-4 border-[#FFD27A]/30 border-t-[#FFD27A] animate-spin" />
