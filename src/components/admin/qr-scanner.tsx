@@ -27,6 +27,7 @@ export default function QrScanner() {
   const scannerRef = useRef<unknown>(null);
   const busyRef = useRef(false);
   const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modalOpenRef = useRef(false);
 
   useEffect(() => {
     if (!scanning) return;
@@ -70,6 +71,7 @@ export default function QrScanner() {
 
   function dismiss() {
     if (autoCloseRef.current) clearTimeout(autoCloseRef.current);
+    modalOpenRef.current = false;
     setModal(null);
   }
 
@@ -82,7 +84,7 @@ export default function QrScanner() {
     if (prev && prev.token === token && now - prev.at < COOLDOWN_MS) return;
     lastTokenRef.current = { token, at: now };
 
-    if (busyRef.current) return;
+    if (busyRef.current || modalOpenRef.current) return;
     busyRef.current = true;
     setBusy(true);
 
@@ -114,6 +116,7 @@ export default function QrScanner() {
         };
       }
 
+      modalOpenRef.current = true;
       setModal(result);
       setHistory((h) => [result, ...h].slice(0, 8));
       buzz();
@@ -171,11 +174,6 @@ export default function QrScanner() {
             {(modal.kind === "ok" || modal.kind === "duplicate") && (
               <p className="font-serif text-3xl font-black leading-tight mb-1">
                 {modal.name}
-              </p>
-            )}
-            {modal.kind === "ok" && modal.companions > 0 && (
-              <p className="text-sm opacity-80 mt-2">
-                + {modal.companions} acompanhante{modal.companions > 1 ? "s" : ""}
               </p>
             )}
             {modal.kind === "not_found" && (
