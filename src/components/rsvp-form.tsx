@@ -214,7 +214,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
 
         <div className="field">
           <label htmlFor="c-email">
-            {t("rsvp.companion.email")}
+            {t("rsvp.companion.email")} <span className="req">*</span>
           </label>
           <input
             id="c-email"

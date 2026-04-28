@@ -34,6 +34,7 @@ export const rsvpSchema = z
       .refine((v) => v === "" || z.string().email().safeParse(v).success, "Email inválido")
       .optional()
       .default(""),
+
     inviteCode: z
       .string()
       .trim()
@@ -63,11 +64,11 @@ export const rsvpSchema = z
           message: "Telefone do acompanhante inválido",
         });
       }
-      if (data.companion_email && !z.string().email().safeParse(data.companion_email).success) {
+      if (!data.companion_email || !z.string().email().safeParse(data.companion_email).success) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["companion_email"],
-          message: "Email do acompanhante inválido",
+          message: "Email do acompanhante obrigatório",
         });
       }
     }
