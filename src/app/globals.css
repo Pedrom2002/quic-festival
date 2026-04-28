@@ -797,13 +797,12 @@ fieldset.radio-field legend .req {
   font-weight: 900;
   font-size: 0.78rem;
   letter-spacing: 0.12em;
-  color: var(--ink);
-  opacity: 0.45;
+  color: #3a5166;
   border-radius: 999px;
-  transition: opacity 0.18s, background 0.18s, color 0.18s;
+  transition: background 0.18s, color 0.18s;
 }
 .lang-switcher .lang-btn:hover {
-  opacity: 0.85;
+  color: var(--ink);
 }
 .lang-switcher .lang-btn.active {
   opacity: 1;
@@ -811,8 +810,7 @@ fieldset.radio-field legend .req {
   color: var(--glow);
 }
 .lang-switcher .lang-sep {
-  color: var(--ink);
-  opacity: 0.35;
+  color: #3a5166;
   font-weight: 700;
   font-size: 0.85rem;
   pointer-events: none;
