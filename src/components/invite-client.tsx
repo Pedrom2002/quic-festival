@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Scene from "@/components/scene";
 import RsvpForm from "@/components/rsvp-form";
 import Lineup from "@/components/lineup";
+import LangSwitcher from "@/components/lang-switcher";
+import { I18nProvider } from "@/lib/i18n";
 
 type Props = {
   code: string;
@@ -27,8 +29,9 @@ export default function InviteClient({
   const blocked = expired || exhausted;
 
   return (
-    <>
+    <I18nProvider>
       <Scene />
+      <LangSwitcher />
 
       <main className={`site-main${mounted ? " in" : ""}`}>
         <section className="hero">
@@ -77,6 +80,6 @@ export default function InviteClient({
           <Lineup />
         </div>
       </main>
-    </>
+    </I18nProvider>
   );
 }
