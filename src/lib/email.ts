@@ -1,5 +1,3 @@
-import QRCode from "qrcode";
-
 const BREVO_API = "https://api.brevo.com/v3/smtp/email";
 
 function brevoKey(): string {
@@ -16,7 +14,6 @@ type BrevoPayload = {
   htmlContent: string;
   textContent?: string;
   headers?: Record<string, string>;
-  inlineAttachment?: { name: string; content: string; contentId: string }[];
 };
 
 function parseFrom(input: string): BrevoSender {
@@ -69,14 +66,7 @@ export async function sendRsvpEmail({ to, name, token }: SendArgs) {
   const confirmUrl = `${site}/confirmado/${token}`;
   const logoUrl = `${site}/logo.png`;
 
-  const qrBuffer = await QRCode.toBuffer(token, {
-    errorCorrectionLevel: "M",
-    margin: 1,
-    width: 512,
-    color: { dark: "#06111B", light: "#F4EBD6" },
-  });
-  const qrCid = "quic-qr@quic.pt";
-  const qrImageUrl = `cid:${qrCid}`;
+  const qrImageUrl = `${site}/api/qr/${encodeURIComponent(token)}`;
 
   const subject = "Tás dentro · QUIC Festival 2026";
   const preheader = "Mostra o QR à entrada · QUIC Festival 2026, Lisboa";
@@ -211,13 +201,6 @@ Dúvidas? Responde a este email.
     subject,
     htmlContent: html,
     textContent: text,
-    inlineAttachment: [
-      {
-        name: "quic-qr.png",
-        content: qrBuffer.toString("base64"),
-        contentId: qrCid,
-      },
-    ],
   });
 
   return data;
