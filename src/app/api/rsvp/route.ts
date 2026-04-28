@@ -250,8 +250,6 @@ export async function POST(req: NextRequest) {
       .eq("id", inserted.id);
   } catch (e) {
     console.error("[rsvp] email", e);
-    // Marca tentativa para o cron retentar; admin vê no dashboard se
-    // exceder MAX_EMAIL_ATTEMPTS (3).
     await supabase
       .from("guests")
       .update({
@@ -260,6 +258,55 @@ export async function POST(req: NextRequest) {
           e instanceof Error ? e.message.slice(0, 500) : "unknown",
       })
       .eq("id", inserted.id);
+  }
+
+  // Acompanhante: inserir como guest separado e enviar email com token próprio.
+  if (companion_count === 1 && data.companion_nome && data.companion_email) {
+    const compIcs = buildFestivalIcs(data.companion_nome);
+    const { data: compInserted, error: compInsertError } = await supabase
+      .from("guests")
+      .insert({
+        name: data.companion_nome,
+        email: data.companion_email,
+        phone: data.phone,
+        companion_count: 0,
+        companion_names: [],
+        companion_emails: [],
+        ics: compIcs,
+        invite_link_id,
+      })
+      .select("id, token")
+      .single();
+
+    if (!compInsertError && compInserted) {
+      const compPublicToken = await signQrToken(compInserted.token);
+      try {
+        await sendRsvpEmail({
+          to: data.companion_email,
+          name: data.companion_nome,
+          token: compPublicToken,
+        });
+        await supabase
+          .from("guests")
+          .update({
+            email_sent_at: new Date().toISOString(),
+            email_attempts: 1,
+          })
+          .eq("id", compInserted.id);
+      } catch (e) {
+        console.error("[rsvp] companion email", e);
+        await supabase
+          .from("guests")
+          .update({
+            email_attempts: 1,
+            email_last_error:
+              e instanceof Error ? e.message.slice(0, 500) : "unknown",
+          })
+          .eq("id", compInserted.id);
+      }
+    } else if (compInsertError && compInsertError.code !== "23505") {
+      console.error("[rsvp] companion insert", compInsertError.code ?? "unknown");
+    }
   }
 
   const responseBody = { token: publicToken };
