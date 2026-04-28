@@ -27,6 +27,13 @@ export const rsvpSchema = z
       .refine((v) => v === "" || phonePT.test(v), "Telefone inválido")
       .optional()
       .default(""),
+    companion_email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .refine((v) => v === "" || z.string().email().safeParse(v).success, "Email inválido")
+      .optional()
+      .default(""),
     inviteCode: z
       .string()
       .trim()
@@ -54,6 +61,13 @@ export const rsvpSchema = z
           code: z.ZodIssueCode.custom,
           path: ["companion_tel"],
           message: "Telefone do acompanhante inválido",
+        });
+      }
+      if (data.companion_email && !z.string().email().safeParse(data.companion_email).success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["companion_email"],
+          message: "Email do acompanhante inválido",
         });
       }
     }

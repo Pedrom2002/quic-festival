@@ -36,6 +36,7 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
       acompanhante: undefined,
       companion_nome: "",
       companion_tel: "",
+      companion_email: "",
     },
     mode: "onBlur",
   });
@@ -208,6 +209,24 @@ export default function RsvpForm({ inviteCode }: Props = {}) {
           />
           {errors.companion_tel && (
             <p className="field-error">{errors.companion_tel.message}</p>
+          )}
+        </div>
+
+        <div className="field">
+          <label htmlFor="c-email">
+            {t("rsvp.companion.email")}
+          </label>
+          <input
+            id="c-email"
+            type="email"
+            inputMode="email"
+            autoCapitalize="off"
+            placeholder={t("rsvp.email.placeholder")}
+            tabIndex={bringsCompanion ? 0 : -1}
+            {...register("companion_email")}
+          />
+          {errors.companion_email && (
+            <p className="field-error">{errors.companion_email.message}</p>
           )}
         </div>
       </div>

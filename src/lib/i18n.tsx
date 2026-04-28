@@ -28,6 +28,7 @@ const dictionaries: Record<Lang, Dict> = {
     "rsvp.no": "NÃO",
     "rsvp.companion.name": "Nome do acompanhante",
     "rsvp.companion.phone": "Telefone do acompanhante",
+    "rsvp.companion.email": "Email do acompanhante (opcional)",
     "rsvp.submit": "CONFIRMAR PRESENÇA",
     "rsvp.submitting": "A CONFIRMAR…",
     "rsvp.error.captcha": "Resolve o captcha primeiro.",
@@ -41,6 +42,8 @@ const dictionaries: Record<Lang, Dict> = {
     "home.invite.title.em": "convite",
     "home.invite.title.after": ".",
     "home.invite.subtitle": "Este evento é fechado. Para confirmar presença precisas de um link de convite enviado pela organização.",
+    "invite.banner.tag": "Convite Pessoal",
+    "invite.banner.for": "Para",
   },
   en: {
     "rsvp.title.before": "Confirm your ",
@@ -56,6 +59,7 @@ const dictionaries: Record<Lang, Dict> = {
     "rsvp.no": "NO",
     "rsvp.companion.name": "Companion's name",
     "rsvp.companion.phone": "Companion's phone",
+    "rsvp.companion.email": "Companion's email (optional)",
     "rsvp.submit": "CONFIRM ATTENDANCE",
     "rsvp.submitting": "CONFIRMING…",
     "rsvp.error.captcha": "Solve the captcha first.",
@@ -69,6 +73,8 @@ const dictionaries: Record<Lang, Dict> = {
     "home.invite.title.em": "invitation",
     "home.invite.title.after": ".",
     "home.invite.subtitle": "This is a closed event. To confirm attendance you need an invitation link sent by the organisation.",
+    "invite.banner.tag": "Personal Invite",
+    "invite.banner.for": "For",
   },
 };
 

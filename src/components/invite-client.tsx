@@ -5,7 +5,7 @@ import Scene from "@/components/scene";
 import RsvpForm from "@/components/rsvp-form";
 import Lineup from "@/components/lineup";
 import LangSwitcher from "@/components/lang-switcher";
-import { I18nProvider } from "@/lib/i18n";
+import { I18nProvider, useT } from "@/lib/i18n";
 
 type Props = {
   code: string;
@@ -14,13 +14,9 @@ type Props = {
   exhausted: boolean;
 };
 
-export default function InviteClient({
-  code,
-  label,
-  expired,
-  exhausted,
-}: Props) {
+function InviteInner({ code, label, expired, exhausted }: Props) {
   const [mounted, setMounted] = useState(false);
+  const { t } = useT();
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
@@ -29,7 +25,7 @@ export default function InviteClient({
   const blocked = expired || exhausted;
 
   return (
-    <I18nProvider>
+    <>
       <Scene />
       <LangSwitcher />
 
@@ -55,10 +51,10 @@ export default function InviteClient({
 
         <section className="form-wrap fade-up d3">
           <div className="invite-banner">
-            <span className="invite-tag">Convite Pessoal</span>
+            <span className="invite-tag">{t("invite.banner.tag")}</span>
             {label && (
               <span className="invite-label">
-                Para {label.charAt(0).toUpperCase() + label.slice(1)}
+                {t("invite.banner.for")} {label.charAt(0).toUpperCase() + label.slice(1)}
               </span>
             )}
           </div>
@@ -80,6 +76,14 @@ export default function InviteClient({
           <Lineup />
         </div>
       </main>
+    </>
+  );
+}
+
+export default function InviteClient(props: Props) {
+  return (
+    <I18nProvider>
+      <InviteInner {...props} />
     </I18nProvider>
   );
 }

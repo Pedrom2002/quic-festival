@@ -127,6 +127,8 @@ export async function POST(req: NextRequest) {
   const companion_count = data.acompanhante === "sim" ? 1 : 0;
   const companion_names =
     companion_count === 1 && data.companion_nome ? [data.companion_nome] : [];
+  const companion_emails =
+    companion_count === 1 && data.companion_email ? [data.companion_email] : [];
 
   // Pre-render ICS at insert time. Cheaper than per-request rendering on
   // every download and naturally tied to the immutable name (0003 trigger
@@ -188,6 +190,7 @@ export async function POST(req: NextRequest) {
       phone: data.phone,
       companion_count,
       companion_names,
+      companion_emails,
       ics,
       invite_link_id,
     })
