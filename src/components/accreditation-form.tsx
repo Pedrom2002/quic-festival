@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { accreditationRsvpSchema, type AccreditationRsvpInput } from "@/lib/validators";
+import { useT } from "@/lib/i18n";
 
 export default function AccreditationForm({
   accreditationCode,
@@ -15,6 +16,7 @@ export default function AccreditationForm({
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const prefersReduced = useReducedMotion();
+  const { t } = useT();
 
   const {
     register,
@@ -36,14 +38,14 @@ export default function AccreditationForm({
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setServerError(json?.error ?? "Erro ao submeter. Tenta novamente.");
+        setServerError(json?.error ?? t("acc.error.generic"));
         return;
       }
       if (json?.token) {
         router.push(`/acreditado/${json.token}`);
       }
     } catch {
-      setServerError("Erro de ligação. Tenta novamente.");
+      setServerError(t("acc.error.network"));
     }
   }
 
@@ -71,15 +73,15 @@ export default function AccreditationForm({
       viewport={{ once: true, margin: "-10%" }}
     >
       <motion.h2 variants={item}>
-        Pede a tua <em>acreditação</em>.
+        {t("acc.title.before")}<em>{t("acc.title.em")}</em>{t("acc.title.after")}
       </motion.h2>
       <motion.p className="subtitle" variants={item}>
-        Preenche os dados abaixo para obteres a tua acreditação media para o QUIC Festival 2026.
+        {t("acc.subtitle")}
       </motion.p>
 
       <motion.div className="field" variants={item}>
         <label htmlFor="ac-name">
-          Nome <span className="req">*</span>
+          {t("acc.name")} <span className="req">*</span>
         </label>
         <input
           id="ac-name"
@@ -93,7 +95,7 @@ export default function AccreditationForm({
 
       <motion.div className="field" variants={item}>
         <label htmlFor="ac-tel">
-          Telemóvel <span className="req">*</span>
+          {t("acc.phone")} <span className="req">*</span>
         </label>
         <input
           id="ac-tel"
@@ -108,7 +110,7 @@ export default function AccreditationForm({
 
       <motion.div className="field" variants={item}>
         <label htmlFor="ac-email">
-          Email <span className="req">*</span>
+          {t("acc.email")} <span className="req">*</span>
         </label>
         <input
           id="ac-email"
@@ -116,7 +118,7 @@ export default function AccreditationForm({
           inputMode="email"
           autoComplete="email"
           autoCapitalize="off"
-          placeholder="email@redacao.pt"
+          placeholder={t("acc.email.placeholder")}
           {...register("email")}
         />
         {errors.email && <p className="field-error">{errors.email.message}</p>}
@@ -124,13 +126,13 @@ export default function AccreditationForm({
 
       <motion.div className="field" variants={item}>
         <label htmlFor="ac-company">
-          Empresa de media <span className="req">*</span>
+          {t("acc.company")} <span className="req">*</span>
         </label>
         <input
           id="ac-company"
           type="text"
           autoCapitalize="words"
-          placeholder="Ex.: RTP, Público, NiT…"
+          placeholder={t("acc.company.placeholder")}
           {...register("media_company")}
         />
         {errors.media_company && (
@@ -145,7 +147,7 @@ export default function AccreditationForm({
         aria-busy={isSubmitting}
         variants={item}
       >
-        <span>{isSubmitting ? "A submeter…" : "Solicitar Acreditação"}</span>
+        <span>{isSubmitting ? t("acc.submitting") : t("acc.submit")}</span>
         {isSubmitting ? (
           <svg
             viewBox="0 0 24 24"
@@ -181,9 +183,13 @@ export default function AccreditationForm({
       )}
 
       <motion.p className="fine-print" variants={item}>
-        Os teus dados são usados exclusivamente para emissão da acreditação media.{" "}
+        {t("acc.fineprint")}
         <a href="/privacidade" style={{ color: "inherit", textDecoration: "underline" }}>
-          Política de privacidade
+          /privacidade
+        </a>
+        {t("acc.fineprint.delete")}
+        <a href="mailto:ola@quic.pt" style={{ color: "inherit", textDecoration: "underline" }}>
+          ola@quic.pt
         </a>
         .
       </motion.p>

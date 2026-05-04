@@ -5,7 +5,7 @@ import Scene from "@/components/scene";
 import AccreditationForm from "@/components/accreditation-form";
 import Lineup from "@/components/lineup";
 import LangSwitcher from "@/components/lang-switcher";
-import { I18nProvider } from "@/lib/i18n";
+import { I18nProvider, useT } from "@/lib/i18n";
 
 type Props = {
   code: string;
@@ -16,6 +16,7 @@ type Props = {
 
 function AccreditationInner({ code, label, expired, exhausted }: Props) {
   const [mounted, setMounted] = useState(false);
+  const { t } = useT();
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true));
@@ -50,22 +51,22 @@ function AccreditationInner({ code, label, expired, exhausted }: Props) {
 
         <section className="form-wrap fade-up d3">
           <div className="invite-banner">
-            <span className="invite-tag">Acreditação Media</span>
+            <span className="invite-tag">{t("acc.banner.tag")}</span>
             {label && (
               <span className="invite-label">
-                {label.charAt(0).toUpperCase() + label.slice(1)}
+                {t("acc.banner.for")} {label.charAt(0).toUpperCase() + label.slice(1)}
               </span>
             )}
           </div>
 
           {expired && (
             <div className="invite-warning" role="alert">
-              Este link de acreditação expirou. Contacta o organizador.
+              {t("acc.expired")}
             </div>
           )}
           {exhausted && !expired && (
             <div className="invite-warning" role="alert">
-              Todas as acreditações deste link foram utilizadas.
+              {t("acc.exhausted")}
             </div>
           )}
           {!blocked && <AccreditationForm accreditationCode={code} />}
