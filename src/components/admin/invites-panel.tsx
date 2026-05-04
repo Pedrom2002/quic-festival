@@ -11,6 +11,7 @@ type Invite = {
   expires_at: string | null;
   archived_at: string | null;
   created_at: string;
+  is_vip: boolean;
 };
 
 export default function InvitesPanel({
@@ -27,6 +28,7 @@ export default function InvitesPanel({
   const [label, setLabel] = useState("");
   const [maxUses, setMaxUses] = useState("40");
   const [expires, setExpires] = useState("");
+  const [isVip, setIsVip] = useState(false);
 
   async function refresh() {
     const res = await fetch("/api/admin/invites", { cache: "no-store" });
@@ -54,9 +56,8 @@ export default function InvitesPanel({
         body: JSON.stringify({
           label: label.trim() || undefined,
           max_uses: max,
-          expires_at: expires
-            ? new Date(expires).toISOString()
-            : undefined,
+          expires_at: expires ? new Date(expires).toISOString() : undefined,
+          is_vip: isVip,
         }),
       });
       const json = (await res.json().catch(() => ({}))) as {
@@ -67,10 +68,11 @@ export default function InvitesPanel({
         setError(json.error ?? "Falha a criar.");
         return;
       }
-      setSuccess(`Convite criado · código ${json.code}`);
+      setSuccess(`Convite ${isVip ? "VIP " : ""}criado · código ${json.code}`);
       setLabel("");
       setMaxUses("40");
       setExpires("");
+      setIsVip(false);
       await refresh();
     });
   }
@@ -108,42 +110,58 @@ export default function InvitesPanel({
           consome um convite.
         </p>
 
-        <form
-          onSubmit={createInvite}
-          noValidate
-          className="grid gap-3 sm:grid-cols-[1fr_120px_180px_120px]"
-        >
-          <input
-            value={label}
-            onChange={(e) => setLabel(e.target.value)}
-            placeholder="Etiqueta (ex.: Sonae 8/05)"
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[#FFD27A]"
-            maxLength={120}
-          />
-          <input
-            value={maxUses}
-            onChange={(e) => setMaxUses(e.target.value)}
-            type="number"
-            min={1}
-            max={1000}
-            inputMode="numeric"
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[#FFD27A]"
-            aria-label="Número de convites"
-          />
-          <input
-            value={expires}
-            onChange={(e) => setExpires(e.target.value)}
-            type="datetime-local"
-            className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[#FFD27A]"
-            aria-label="Expira em"
-          />
-          <button
-            type="submit"
-            disabled={isPending}
-            className="rounded-lg border-2 border-[#FFD27A] bg-[#FFD27A] text-[#06111B] px-3 py-2 text-xs tracking-[.16em] uppercase font-black hover:bg-[#F2A93C] disabled:opacity-50 transition"
-          >
-            {isPending ? "..." : "Gerar"}
-          </button>
+        <form onSubmit={createInvite} noValidate className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-[1fr_120px_180px]">
+            <input
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="Etiqueta (ex.: Sonae 8/05)"
+              className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[#FFD27A]"
+              maxLength={120}
+            />
+            <input
+              value={maxUses}
+              onChange={(e) => setMaxUses(e.target.value)}
+              type="number"
+              min={1}
+              max={1000}
+              inputMode="numeric"
+              className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[#FFD27A]"
+              aria-label="Número de convites"
+            />
+            <input
+              value={expires}
+              onChange={(e) => setExpires(e.target.value)}
+              type="datetime-local"
+              className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm outline-none focus:border-[#FFD27A]"
+              aria-label="Expira em"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isVip}
+                onChange={(e) => setIsVip(e.target.checked)}
+                className="w-4 h-4 accent-[#FFD27A]"
+              />
+              <span className="text-sm font-black tracking-[.14em] uppercase text-[#FFD27A]">
+                Convite VIP
+              </span>
+              <span className="text-xs opacity-60">(guests ganham acesso ao Deck VIP)</span>
+            </label>
+            <button
+              type="submit"
+              disabled={isPending}
+              className={`ml-auto rounded-lg border-2 px-5 py-2 text-xs tracking-[.16em] uppercase font-black disabled:opacity-50 transition ${
+                isVip
+                  ? "border-[#FFD27A] bg-[#FFD27A] text-[#06111B] hover:bg-[#F2A93C]"
+                  : "border-[#FFD27A] bg-[#FFD27A] text-[#06111B] hover:bg-[#F2A93C]"
+              }`}
+            >
+              {isPending ? "..." : isVip ? "Gerar VIP" : "Gerar"}
+            </button>
+          </div>
         </form>
 
         {error && (
@@ -200,7 +218,14 @@ export default function InvitesPanel({
               return (
                 <tr key={inv.id} className={archived ? "opacity-50" : ""}>
                   <td className="py-3 pr-3">
-                    <div className="font-bold">{inv.label ?? "—"}</div>
+                    <div className="font-bold flex items-center gap-2">
+                      {inv.label ?? "—"}
+                      {inv.is_vip && (
+                        <span className="text-[10px] tracking-[.12em] uppercase font-black text-[#FFD27A] bg-[#FFD27A]/15 border border-[#FFD27A]/40 rounded px-1 py-0.5">
+                          VIP
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs opacity-60">
                       {new Date(inv.created_at).toLocaleString("pt-PT")}
                     </div>
