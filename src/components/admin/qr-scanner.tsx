@@ -18,30 +18,23 @@ const DAY_LABELS: Record<1 | 2, string> = {
   2: "Dia 2 · Dom 9 Mai",
 };
 
-function autoDay(): 1 | 2 {
-  const d = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Lisbon" });
-  if (d === "2026-05-09") return 2;
-  return 1;
-}
-
 export default function QrScanner() {
   const containerId = "qr-reader";
-  const [scanning, setScanning] = useState(false);
+  const [activeDay, setActiveDay] = useState<1 | 2 | null>(null);
   const [modal, setModal] = useState<ScanResult | null>(null);
   const [history, setHistory] = useState<ScanResult[]>([]);
   const [busy, setBusy] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [manual, setManual] = useState("");
-  const [activeDay, setActiveDay] = useState<1 | 2>(autoDay);
 
   const lastTokenRef = useRef<{ token: string; at: number } | null>(null);
   const scannerRef = useRef<unknown>(null);
   const busyRef = useRef(false);
-  const autoCloseRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const modalOpenRef = useRef(false);
 
   useEffect(() => {
-    if (!scanning) return;
+    if (activeDay === null) return;
+    const day = activeDay;
 
     let cancelled = false;
     let scanner: unknown;
@@ -58,7 +51,7 @@ export default function QrScanner() {
         await inst.start(
           { facingMode: "environment" },
           { fps: 10, qrbox: { width: 260, height: 260 }, aspectRatio: 1.0 },
-          (decoded) => onDecode(decoded),
+          (decoded) => onDecode(decoded, day),
           /* v8 ignore next */
           () => {},
         );
@@ -76,12 +69,12 @@ export default function QrScanner() {
         | { stop: () => Promise<void>; clear: () => void }
         | undefined;
       if (inst) inst.stop().then(() => inst.clear()).catch(() => {});
+      scannerRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scanning]);
+  }, [activeDay]);
 
   function dismiss() {
-    if (autoCloseRef.current) clearTimeout(autoCloseRef.current);
     modalOpenRef.current = false;
     setModal(null);
     const inst = scannerRef.current as
@@ -94,7 +87,14 @@ export default function QrScanner() {
     }
   }
 
-  async function onDecode(raw: string) {
+  function stopSession() {
+    setActiveDay(null);
+    setCameraError(null);
+    setModal(null);
+    modalOpenRef.current = false;
+  }
+
+  async function onDecode(raw: string, day: 1 | 2) {
     const token = raw.trim();
     if (!TOKEN_RE.test(token)) return;
 
@@ -111,7 +111,7 @@ export default function QrScanner() {
       const res = await fetch("/api/admin/checkin", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, checked_in: true, day: activeDay }),
+        body: JSON.stringify({ token, checked_in: true, day }),
       });
       const json = (await res.json().catch(() => ({}))) as {
         guest?: { name: string; companion_count: number };
@@ -127,14 +127,14 @@ export default function QrScanner() {
       } else if (!res.ok) {
         result = { kind: "error", message: json.error ?? "Erro." };
       } else if (json.was_already_checked_in) {
-        result = { kind: "duplicate", name: json.guest?.name ?? "?", token, day: activeDay };
+        result = { kind: "duplicate", name: json.guest?.name ?? "?", token, day };
       } else {
         result = {
           kind: "ok",
           name: json.guest?.name ?? "?",
           companions: json.guest?.companion_count ?? 0,
           token,
-          day: activeDay,
+          day,
           hadOtherDay: !!json.checked_in_other_day,
         };
       }
@@ -151,7 +151,6 @@ export default function QrScanner() {
       setModal(result);
       setHistory((h) => [result, ...h].slice(0, 8));
       buzz();
-
     } catch (e) {
       const result: ScanResult = {
         kind: "error",
@@ -182,25 +181,23 @@ export default function QrScanner() {
 
   return (
     <>
-      {/* ── Day selector ─────────────────────────────── */}
-      <div className="flex justify-center mb-4">
-        <div className="inline-flex rounded-full border-2 border-[#FFD27A]/40 overflow-hidden">
-          {([1, 2] as const).map((d) => (
+      {/* ── Active session banner ─────────────────────── */}
+      {activeDay !== null && (
+        <div className="flex justify-center mb-4">
+          <div className="inline-flex items-center gap-4 rounded-full border-2 border-[#FFD27A] bg-[#FFD27A]/10 px-5 py-2">
+            <span className="text-xs tracking-[.16em] uppercase font-black text-[#FFD27A]">
+              {DAY_LABELS[activeDay]}
+            </span>
             <button
-              key={d}
               type="button"
-              onClick={() => setActiveDay(d)}
-              className={`px-5 py-2 text-xs tracking-[.16em] uppercase font-black transition ${
-                activeDay === d
-                  ? "bg-[#FFD27A] text-[#06111B]"
-                  : "text-[#FFD27A]/70 hover:text-[#FFD27A]"
-              }`}
+              onClick={stopSession}
+              className="text-xs tracking-[.14em] uppercase text-[#FFD27A]/80 hover:text-[#FFD27A] transition underline underline-offset-2"
             >
-              {DAY_LABELS[d]}
+              Trocar dia
             </button>
-          ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Result modal ─────────────────────────────── */}
       {modal && (
@@ -214,7 +211,6 @@ export default function QrScanner() {
             style={modalStyle(modal)}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Icon */}
             <div
               className="mx-auto mb-5 w-20 h-20 rounded-full border-2 grid place-items-center text-4xl font-black"
               style={iconStyle(modal)}
@@ -222,7 +218,6 @@ export default function QrScanner() {
               {modal.kind === "ok" ? "✓" : modal.kind === "duplicate" ? "⚠" : "✗"}
             </div>
 
-            {/* Status label */}
             <p className="text-xs tracking-[.22em] uppercase opacity-80 mb-2">
               {modal.kind === "ok" && "Entrada confirmada"}
               {modal.kind === "duplicate" && "Já tinha check-in hoje"}
@@ -230,14 +225,12 @@ export default function QrScanner() {
               {modal.kind === "error" && "Erro"}
             </p>
 
-            {/* Day badge */}
             {"day" in modal && (
               <p className="text-xs opacity-60 mb-3 tracking-[.14em] uppercase">
                 {DAY_LABELS[modal.day as 1 | 2]}
               </p>
             )}
 
-            {/* Name / detail */}
             {(modal.kind === "ok" || modal.kind === "duplicate") && (
               <p className="font-serif text-3xl font-black leading-tight mb-1">
                 {modal.name}
@@ -255,14 +248,12 @@ export default function QrScanner() {
               <p className="text-sm opacity-80 mt-1">{modal.message}</p>
             )}
 
-            {/* Dismiss */}
             <button
               onClick={dismiss}
               className="mt-7 w-full rounded-full border-2 border-current py-3 text-xs tracking-[.18em] uppercase font-black opacity-90 hover:opacity-100 transition"
             >
               {modal.kind === "ok" ? "Próximo" : "Fechar"}
             </button>
-
           </div>
         </div>
       )}
@@ -271,14 +262,23 @@ export default function QrScanner() {
       <div className="grid gap-5 max-w-xl mx-auto">
         <div className="rounded-2xl overflow-hidden border-2 border-[#FFD27A]/40 bg-black aspect-square relative">
           <div id={containerId} className="absolute inset-0" />
-          {!scanning && (
-            <div className="absolute inset-0 grid place-items-center bg-black/80">
-              <button
-                onClick={() => setScanning(true)}
-                className="rounded-full border-2 border-[#FFD27A] text-[#FFD27A] px-8 py-4 text-sm tracking-[.18em] uppercase font-black hover:bg-[#FFD27A] hover:text-[#06111B] transition"
-              >
-                Iniciar Scanner
-              </button>
+          {activeDay === null && (
+            <div className="absolute inset-0 grid place-items-center bg-black/80 p-6">
+              <div className="grid gap-4 w-full max-w-xs">
+                <p className="text-center text-xs tracking-[.22em] uppercase opacity-60">
+                  Escolhe o dia para iniciar
+                </p>
+                {([1, 2] as const).map((d) => (
+                  <button
+                    key={d}
+                    type="button"
+                    onClick={() => setActiveDay(d)}
+                    className="rounded-full border-2 border-[#FFD27A] text-[#FFD27A] px-6 py-3 text-sm tracking-[.18em] uppercase font-black hover:bg-[#FFD27A] hover:text-[#06111B] transition"
+                  >
+                    Iniciar {DAY_LABELS[d]}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
           {busy && (
@@ -299,38 +299,40 @@ export default function QrScanner() {
           )}
         </div>
 
-        <details className="rounded-xl border border-white/15 bg-white/5">
-          <summary className="cursor-pointer px-4 py-3 text-xs tracking-[.18em] uppercase opacity-80 hover:opacity-100">
-            Inserir token manualmente
-          </summary>
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const v = manual.trim();
-              if (!v) return;
-              setManual("");
-              void onDecode(v);
-            }}
-            className="flex gap-2 p-3 pt-0"
-          >
-            <input
-              value={manual}
-              onChange={(e) => setManual(e.target.value)}
-              placeholder="UUID do token"
-              spellCheck={false}
-              autoCapitalize="off"
-              autoCorrect="off"
-              className="flex-1 min-w-0 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-mono outline-none focus:border-[#FFD27A]"
-            />
-            <button
-              type="submit"
-              disabled={busy}
-              className="rounded-lg border-2 border-[#FFD27A] text-[#FFD27A] px-3 py-2 text-xs tracking-[.16em] uppercase hover:bg-[#FFD27A] hover:text-[#06111B] disabled:opacity-50 transition"
+        {activeDay !== null && (
+          <details className="rounded-xl border border-white/15 bg-white/5">
+            <summary className="cursor-pointer px-4 py-3 text-xs tracking-[.18em] uppercase opacity-80 hover:opacity-100">
+              Inserir token manualmente
+            </summary>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const v = manual.trim();
+                if (!v) return;
+                setManual("");
+                void onDecode(v, activeDay);
+              }}
+              className="flex gap-2 p-3 pt-0"
             >
-              Check-in
-            </button>
-          </form>
-        </details>
+              <input
+                value={manual}
+                onChange={(e) => setManual(e.target.value)}
+                placeholder="UUID do token"
+                spellCheck={false}
+                autoCapitalize="off"
+                autoCorrect="off"
+                className="flex-1 min-w-0 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm font-mono outline-none focus:border-[#FFD27A]"
+              />
+              <button
+                type="submit"
+                disabled={busy}
+                className="rounded-lg border-2 border-[#FFD27A] text-[#FFD27A] px-3 py-2 text-xs tracking-[.16em] uppercase hover:bg-[#FFD27A] hover:text-[#06111B] disabled:opacity-50 transition"
+              >
+                Check-in
+              </button>
+            </form>
+          </details>
+        )}
 
         {history.length > 0 && (
           <div>

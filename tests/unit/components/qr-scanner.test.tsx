@@ -44,7 +44,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Iniciar Scanner/i }));
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await new Promise((r) => setTimeout(r, 0));
     expect(startMock).toHaveBeenCalledWith(
       { facingMode: "environment" },
@@ -59,7 +59,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Iniciar Scanner/i }));
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(await screen.findByText("camera denied")).toBeInTheDocument();
   });
@@ -69,7 +69,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Iniciar Scanner/i }));
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(await screen.findByText(/string err/)).toBeInTheDocument();
   });
@@ -79,7 +79,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Iniciar Scanner/i }));
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(await screen.findByText(/Câmara indisponível/)).toBeInTheDocument();
   });
@@ -89,7 +89,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Iniciar Scanner/i }));
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
     expect(await screen.findByText(/HTTPS/)).toBeInTheDocument();
   });
@@ -105,7 +105,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Iniciar Scanner/i }));
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     // wait for dynamic import + startMock to complete
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     expect(capturedOnSuccess).not.toBeNull();
@@ -117,7 +117,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     const { unmount } = render(<QrScanner />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Iniciar Scanner/i }));
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
     unmount();
     await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
@@ -129,6 +129,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await user.click(screen.getByText(/Inserir token manualmente/));
     const input = screen.getByPlaceholderText(/UUID do token/);
     await user.type(input, VALID_TOKEN);
@@ -141,6 +142,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await user.click(screen.getByText(/Inserir token manualmente/));
     await user.type(screen.getByPlaceholderText(/UUID do token/), "not-uuid");
     await user.click(screen.getByRole("button", { name: /^check-in$/i }));
@@ -151,6 +153,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await user.click(screen.getByText(/Inserir token manualmente/));
     await user.click(screen.getByRole("button", { name: /^check-in$/i }));
     expect(fetchMock).not.toHaveBeenCalled();
@@ -161,6 +164,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await user.click(screen.getByText(/Inserir token manualmente/));
     await user.type(screen.getByPlaceholderText(/UUID do token/), VALID_TOKEN);
     await user.click(screen.getByRole("button", { name: /^check-in$/i }));
@@ -172,6 +176,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await user.click(screen.getByText(/Inserir token manualmente/));
     await user.type(screen.getByPlaceholderText(/UUID do token/), VALID_TOKEN);
     await user.click(screen.getByRole("button", { name: /^check-in$/i }));
@@ -183,6 +188,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await user.click(screen.getByText(/Inserir token manualmente/));
     await user.type(screen.getByPlaceholderText(/UUID do token/), VALID_TOKEN);
     await user.click(screen.getByRole("button", { name: /^check-in$/i }));
@@ -194,6 +200,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await user.click(screen.getByText(/Inserir token manualmente/));
     await user.type(screen.getByPlaceholderText(/UUID do token/), VALID_TOKEN);
     await user.click(screen.getByRole("button", { name: /^check-in$/i }));
@@ -205,6 +212,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await user.click(screen.getByText(/Inserir token manualmente/));
     await user.type(screen.getByPlaceholderText(/UUID do token/), VALID_TOKEN);
     await user.click(screen.getByRole("button", { name: /^check-in$/i }));
@@ -218,6 +226,7 @@ describe("QrScanner", () => {
     const { default: QrScanner } = await import("@/components/admin/qr-scanner");
     render(<QrScanner />);
     const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await user.click(screen.getByText(/Inserir token manualmente/));
     await user.type(screen.getByPlaceholderText(/UUID do token/), VALID_TOKEN);
     await user.click(screen.getByRole("button", { name: /^check-in$/i }));

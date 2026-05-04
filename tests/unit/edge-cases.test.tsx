@@ -149,7 +149,7 @@ describe("qr-scanner stop chain on unmount", () => {
     const userEvent = (await import("@testing-library/user-event")).default;
     const { unmount } = render(<QrScanner />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("button", { name: /Iniciar Scanner/i }));
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
     await new Promise((r) => setTimeout(r, 0));
     unmount();
     await new Promise((r) => setTimeout(r, 0));
