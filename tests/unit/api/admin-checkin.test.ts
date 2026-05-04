@@ -11,7 +11,7 @@ vi.mock("@/lib/rate-limit", () => ({ rateLimit: rateLimitMock }));
 
 const userResult = { value: { data: { user: { email: "a@quic.pt" } as { email: string } | null }, error: null } };
 const adminCheck = { value: { email: "a@quic.pt" } as { email: string } | null };
-const guestRow = { value: { id: "g-1", name: "Maria", companion_count: 0, checked_in_at: null as string | null } as Record<string, unknown> | null };
+const guestRow = { value: { id: "g-1", name: "Maria", companion_count: 0, checked_in_day1_at: null as string | null, checked_in_day2_at: null as string | null } as Record<string, unknown> | null };
 const updateError = { value: null as { code?: string } | null };
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -49,7 +49,7 @@ beforeEach(() => {
   rateLimitMock.mockResolvedValue({ ok: true, retryAfterSeconds: 0 });
   userResult.value = { data: { user: { email: "a@quic.pt" } }, error: null };
   adminCheck.value = { email: "a@quic.pt" };
-  guestRow.value = { id: "g-1", name: "Maria", companion_count: 0, checked_in_at: null };
+  guestRow.value = { id: "g-1", name: "Maria", companion_count: 0, checked_in_day1_at: null, checked_in_day2_at: null };
   updateError.value = null;
 });
 afterEach(() => vi.restoreAllMocks());
@@ -104,7 +104,7 @@ describe("PATCH /api/admin/checkin", () => {
   });
 
   it("duplicate (já check-in) → audit duplicate", async () => {
-    guestRow.value = { id: "g-1", name: "M", companion_count: 0, checked_in_at: "2026-01-01" };
+    guestRow.value = { id: "g-1", name: "M", companion_count: 0, checked_in_day1_at: "2026-01-01", checked_in_day2_at: null };
     const res = await call({ id: VALID_ID });
     expect(res.status).toBe(200);
     expect((await res.json()).was_already_checked_in).toBe(true);

@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await admin
     .from("guests")
     .select(
-      "created_at,name,email,phone,companion_count,companion_names,token,checked_in_at,email_sent_at",
+      "created_at,name,email,phone,companion_count,companion_names,token,checked_in_day1_at,checked_in_day2_at,email_sent_at",
     )
     .order("created_at", { ascending: false });
 
@@ -61,7 +61,8 @@ export async function GET(req: NextRequest) {
     "Acompanhantes",
     "Nomes acompanhantes",
     "Token",
-    "Check-in",
+    "Check-in Dia 1",
+    "Check-in Dia 2",
     "Email enviado",
   ];
 
@@ -73,7 +74,8 @@ export async function GET(req: NextRequest) {
     Acompanhantes: g.companion_count,
     "Nomes acompanhantes": (g.companion_names ?? []).join("; "),
     Token: g.token,
-    "Check-in": g.checked_in_at ?? "",
+    "Check-in Dia 1": g.checked_in_day1_at ?? "",
+    "Check-in Dia 2": g.checked_in_day2_at ?? "",
     "Email enviado": g.email_sent_at ?? "",
   }));
 

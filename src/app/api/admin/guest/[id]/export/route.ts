@@ -49,7 +49,7 @@ export async function GET(
   const { data: guest } = await admin
     .from("guests")
     .select(
-      "id, created_at, name, email, phone, companion_count, companion_names, checked_in_at, email_sent_at, email_attempts, email_failed_at",
+      "id, created_at, name, email, phone, companion_count, companion_names, checked_in_day1_at, checked_in_day2_at, email_sent_at, email_attempts, email_failed_at",
     )
     .eq("id", idCheck.data)
     .maybeSingle();
@@ -86,7 +86,8 @@ export async function GET(
         registered_at: guest.created_at,
         companion_count: guest.companion_count,
         companion_names: guest.companion_names,
-        checked_in_at: guest.checked_in_at,
+        checked_in_day1_at: guest.checked_in_day1_at,
+        checked_in_day2_at: guest.checked_in_day2_at,
         email_sent_at: guest.email_sent_at,
         email_attempts: guest.email_attempts,
         email_failed_at: guest.email_failed_at,

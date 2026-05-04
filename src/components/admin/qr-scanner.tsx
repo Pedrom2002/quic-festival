@@ -3,8 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 
 type ScanResult =
-  | { kind: "ok"; name: string; companions: number; token: string }
-  | { kind: "duplicate"; name: string; token: string }
+  | { kind: "ok"; name: string; companions: number; token: string; day: number }
+  | { kind: "duplicate"; name: string; token: string; day: number }
+  | { kind: "other_day"; name: string; token: string; day: number }
   | { kind: "not_found"; token: string }
   | { kind: "error"; message: string };
 
@@ -12,6 +13,17 @@ const TOKEN_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\.[0-9]+\.[A-Za-z0-9_-]+)?$/i;
 
 const COOLDOWN_MS = 2500;
+
+const DAY_LABELS: Record<1 | 2, string> = {
+  1: "Dia 1 · Sáb 8 Mai",
+  2: "Dia 2 · Dom 9 Mai",
+};
+
+function autoDay(): 1 | 2 {
+  const d = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/Lisbon" });
+  if (d === "2026-05-09") return 2;
+  return 1;
+}
 
 export default function QrScanner() {
   const containerId = "qr-reader";
@@ -21,6 +33,7 @@ export default function QrScanner() {
   const [busy, setBusy] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [manual, setManual] = useState("");
+  const [activeDay, setActiveDay] = useState<1 | 2>(autoDay);
 
   const lastTokenRef = useRef<{ token: string; at: number } | null>(null);
   const scannerRef = useRef<unknown>(null);
@@ -99,11 +112,13 @@ export default function QrScanner() {
       const res = await fetch("/api/admin/checkin", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, checked_in: true }),
+        body: JSON.stringify({ token, checked_in: true, day: activeDay }),
       });
       const json = (await res.json().catch(() => ({}))) as {
         guest?: { name: string; companion_count: number };
         was_already_checked_in?: boolean;
+        checked_in_other_day?: boolean;
+        day?: number;
         error?: string;
       };
 
@@ -113,13 +128,16 @@ export default function QrScanner() {
       } else if (!res.ok) {
         result = { kind: "error", message: json.error ?? "Erro." };
       } else if (json.was_already_checked_in) {
-        result = { kind: "duplicate", name: json.guest?.name ?? "?", token };
+        result = { kind: "duplicate", name: json.guest?.name ?? "?", token, day: activeDay };
+      } else if (json.checked_in_other_day && !json.was_already_checked_in) {
+        result = { kind: "other_day", name: json.guest?.name ?? "?", token, day: activeDay };
       } else {
         result = {
           kind: "ok",
           name: json.guest?.name ?? "?",
           companions: json.guest?.companion_count ?? 0,
           token,
+          day: activeDay,
         };
       }
 
@@ -166,6 +184,26 @@ export default function QrScanner() {
 
   return (
     <>
+      {/* ── Day selector ─────────────────────────────── */}
+      <div className="flex justify-center mb-4">
+        <div className="inline-flex rounded-full border-2 border-[#FFD27A]/40 overflow-hidden">
+          {([1, 2] as const).map((d) => (
+            <button
+              key={d}
+              type="button"
+              onClick={() => setActiveDay(d)}
+              className={`px-5 py-2 text-xs tracking-[.16em] uppercase font-black transition ${
+                activeDay === d
+                  ? "bg-[#FFD27A] text-[#06111B]"
+                  : "text-[#FFD27A]/70 hover:text-[#FFD27A]"
+              }`}
+            >
+              {DAY_LABELS[d]}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── Result modal ─────────────────────────────── */}
       {modal && (
         <div
@@ -183,21 +221,34 @@ export default function QrScanner() {
               className="mx-auto mb-5 w-20 h-20 rounded-full border-2 grid place-items-center text-4xl font-black"
               style={iconStyle(modal)}
             >
-              {modal.kind === "ok" ? "✓" : modal.kind === "duplicate" ? "⚠" : "✗"}
+              {modal.kind === "ok" ? "✓" : modal.kind === "duplicate" || modal.kind === "other_day" ? "⚠" : "✗"}
             </div>
 
             {/* Status label */}
             <p className="text-xs tracking-[.22em] uppercase opacity-80 mb-2">
               {modal.kind === "ok" && "Entrada confirmada"}
-              {modal.kind === "duplicate" && "Já tinha check-in"}
+              {modal.kind === "duplicate" && "Já tinha check-in hoje"}
+              {modal.kind === "other_day" && "Check-in no outro dia"}
               {modal.kind === "not_found" && "QR não reconhecido"}
               {modal.kind === "error" && "Erro"}
             </p>
 
+            {/* Day badge */}
+            {"day" in modal && (
+              <p className="text-xs opacity-60 mb-3 tracking-[.14em] uppercase">
+                {DAY_LABELS[modal.day as 1 | 2]}
+              </p>
+            )}
+
             {/* Name / detail */}
-            {(modal.kind === "ok" || modal.kind === "duplicate") && (
+            {(modal.kind === "ok" || modal.kind === "duplicate" || modal.kind === "other_day") && (
               <p className="font-serif text-3xl font-black leading-tight mb-1">
                 {modal.name}
+              </p>
+            )}
+            {modal.kind === "other_day" && (
+              <p className="text-sm opacity-70 mt-2">
+                Já fez check-in no {modal.day === 1 ? "Dia 2" : "Dia 1"} — confirmar entrada?
               </p>
             )}
             {modal.kind === "not_found" && (
@@ -294,16 +345,16 @@ export default function QrScanner() {
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${
                     r.kind === "ok"
                       ? "border-emerald-500/40 text-emerald-200"
-                      : r.kind === "duplicate"
+                      : r.kind === "duplicate" || r.kind === "other_day"
                         ? "border-amber-500/40 text-amber-200"
                         : "border-rose-500/40 text-rose-200"
                   }`}
                 >
                   <span className="text-base">
-                    {r.kind === "ok" ? "✓" : r.kind === "duplicate" ? "⚠" : "✗"}
+                    {r.kind === "ok" ? "✓" : r.kind === "duplicate" || r.kind === "other_day" ? "⚠" : "✗"}
                   </span>
                   <span className="flex-1 truncate">
-                    {r.kind === "ok" || r.kind === "duplicate"
+                    {r.kind === "ok" || r.kind === "duplicate" || r.kind === "other_day"
                       ? r.name
                       : r.kind === "not_found"
                         ? "Token desconhecido"
@@ -322,13 +373,13 @@ export default function QrScanner() {
 function modalStyle(r: ScanResult): React.CSSProperties {
   if (r.kind === "ok")
     return { background: "#064e3b", borderColor: "#34d399", color: "#ecfdf5" };
-  if (r.kind === "duplicate")
+  if (r.kind === "duplicate" || r.kind === "other_day")
     return { background: "#78350f", borderColor: "#fbbf24", color: "#fffbeb" };
   return { background: "#7f1d1d", borderColor: "#f87171", color: "#fef2f2" };
 }
 
 function iconStyle(r: ScanResult): React.CSSProperties {
   if (r.kind === "ok") return { borderColor: "#34d399", background: "#065f46" };
-  if (r.kind === "duplicate") return { borderColor: "#fbbf24", background: "#92400e" };
+  if (r.kind === "duplicate" || r.kind === "other_day") return { borderColor: "#fbbf24", background: "#92400e" };
   return { borderColor: "#f87171", background: "#991b1b" };
 }

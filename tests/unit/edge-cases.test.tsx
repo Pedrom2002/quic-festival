@@ -121,12 +121,12 @@ describe("guests-table edge: null companion_names + null sort key", () => {
     const { render, screen } = await import("@testing-library/react");
     const userEvent = (await import("@testing-library/user-event")).default;
     const ROWS = [
-      { id: "1", created_at: "x", name: "A", email: "a@x", phone: "9", companion_count: 1, companion_names: null as unknown as string[], token: "t1", checked_in_at: null, email_sent_at: null },
-      { id: "2", created_at: "y", name: "B", email: "b@x", phone: "9", companion_count: 0, companion_names: [], token: "t2", checked_in_at: null, email_sent_at: null },
+      { id: "1", created_at: "x", name: "A", email: "a@x", phone: "9", companion_count: 1, companion_names: null as unknown as string[], token: "t1", checked_in_day1_at: null, checked_in_day2_at: null, email_sent_at: null },
+      { id: "2", created_at: "y", name: "B", email: "b@x", phone: "9", companion_count: 0, companion_names: [], token: "t2", checked_in_day1_at: null, checked_in_day2_at: null, email_sent_at: null },
     ];
     render(<GuestsTable initial={ROWS} />);
     const user = userEvent.setup();
-    await user.click(screen.getByRole("columnheader", { name: /^Check-in/ }));
+    await user.click(screen.getByRole("columnheader", { name: /^D1/ }));
     expect(screen.getByText("A")).toBeInTheDocument();
   });
 });

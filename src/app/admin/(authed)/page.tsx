@@ -9,27 +9,22 @@ export default async function AdminPage() {
   const { data: guests } = await admin
     .from("guests")
     .select(
-      "id,created_at,name,email,phone,companion_count,companion_names,token,checked_in_at,email_sent_at,email_failed_at,email_attempts",
+      "id,created_at,name,email,phone,companion_count,companion_names,token,checked_in_day1_at,checked_in_day2_at,email_sent_at,email_failed_at,email_attempts",
     )
     .order("created_at", { ascending: false });
 
   const rows = guests ?? [];
   const total = rows.length;
   const companions = rows.reduce((s, g) => s + (g.companion_count ?? 0), 0);
-  const checkedIn = rows.filter((g) => g.checked_in_at).length;
-  const pending = total - checkedIn;
-  const today = new Date().toISOString().slice(0, 10);
-  const checkedInToday = rows.filter(
-    (g) => g.checked_in_at && g.checked_in_at.slice(0, 10) === today,
-  ).length;
+  const checkedInDay1 = rows.filter((g) => g.checked_in_day1_at).length;
+  const checkedInDay2 = rows.filter((g) => g.checked_in_day2_at).length;
+  const checkedInEither = rows.filter((g) => g.checked_in_day1_at || g.checked_in_day2_at).length;
+  const pending = total - checkedInEither;
   const totalSeats = total + companions;
-  const checkInRate = totalSeats > 0
-    ? Math.round((checkedIn / totalSeats) * 100)
-    : 0;
+  const checkInRate = totalSeats > 0 ? Math.round((checkedInEither / totalSeats) * 100) : 0;
   const emailFailed = rows.filter((g) => g.email_failed_at).length;
   const lastCheckIn = rows
-    .filter((g) => g.checked_in_at)
-    .map((g) => g.checked_in_at as string)
+    .flatMap((g) => [g.checked_in_day1_at, g.checked_in_day2_at].filter(Boolean) as string[])
     .sort()
     .at(-1);
 
@@ -71,11 +66,12 @@ export default async function AdminPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
         <Stat label="Inscritos" value={total} />
         <Stat label="Acompanhantes" value={companions} />
-        <Stat label="Check-ins hoje" value={checkedInToday} accent />
-        <Stat label="Pendentes" value={pending} />
+        <Stat label="Check-in Dia 1" value={checkedInDay1} accent />
+        <Stat label="Check-in Dia 2" value={checkedInDay2} accent />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+        <Stat label="Pendentes" value={pending} />
         <Stat label="Taxa de entrada" value={`${checkInRate}%`} />
         <Stat
           label="Último scan"

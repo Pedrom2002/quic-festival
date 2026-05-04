@@ -11,13 +11,14 @@ type Guest = {
   companion_count: number;
   companion_names: string[];
   token: string;
-  checked_in_at: string | null;
+  checked_in_day1_at: string | null;
+  checked_in_day2_at: string | null;
   email_sent_at: string | null;
 };
 
 type Toast = { id: number; kind: "ok" | "err"; msg: string };
 type Filter = "all" | "checked" | "pending";
-type SortKey = "created_at" | "name" | "checked_in_at";
+type SortKey = "created_at" | "name" | "checked_in_day1_at";
 
 export default function GuestsTable({ initial }: { initial: Guest[] }) {
   const [rows, setRows] = useState<Guest[]>(initial);
@@ -47,8 +48,8 @@ export default function GuestsTable({ initial }: { initial: Guest[] }) {
           r.phone.includes(s),
       );
     }
-    if (filter === "checked") out = out.filter((r) => r.checked_in_at);
-    if (filter === "pending") out = out.filter((r) => !r.checked_in_at);
+    if (filter === "checked") out = out.filter((r) => r.checked_in_day1_at || r.checked_in_day2_at);
+    if (filter === "pending") out = out.filter((r) => !r.checked_in_day1_at && !r.checked_in_day2_at);
 
     const sorted = [...out].sort((a, b) => {
       const av = a[sortKey] ?? "";
@@ -59,32 +60,29 @@ export default function GuestsTable({ initial }: { initial: Guest[] }) {
     return sorted;
   }, [rows, q, filter, sortKey, sortAsc]);
 
-  async function toggleCheckin(g: Guest) {
+  async function toggleCheckin(g: Guest, day: 1 | 2) {
     setBusy(g.id);
-    const next = !g.checked_in_at;
+    const col = day === 1 ? "checked_in_day1_at" : "checked_in_day2_at";
+    const next = !g[col];
     setRows((prev) =>
       prev.map((r) =>
-        r.id === g.id
-          ? { ...r, checked_in_at: next ? new Date().toISOString() : null }
-          : r,
+        r.id === g.id ? { ...r, [col]: next ? new Date().toISOString() : null } : r,
       ),
     );
     const res = await fetch("/api/admin/checkin", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: g.id, checked_in: next }),
+      body: JSON.stringify({ id: g.id, checked_in: next, day }),
     });
     setBusy(null);
     if (!res.ok) {
       setRows((prev) =>
-        prev.map((r) =>
-          r.id === g.id ? { ...r, checked_in_at: g.checked_in_at } : r,
-        ),
+        prev.map((r) => (r.id === g.id ? { ...r, [col]: g[col] } : r)),
       );
       pushToast("err", "Falha a atualizar check-in.");
       return;
     }
-    pushToast("ok", next ? "Check-in feito." : "Check-in removido.");
+    pushToast("ok", next ? `Check-in D${day} feito.` : `Check-in D${day} removido.`);
   }
 
   async function resendEmail(g: Guest) {
@@ -109,14 +107,10 @@ export default function GuestsTable({ initial }: { initial: Guest[] }) {
 
   function toggleSort(k: SortKey) {
     if (sortKey === k) setSortAsc((a) => !a);
-    else {
-      setSortKey(k);
-      setSortAsc(false);
-    }
+    else { setSortKey(k); setSortAsc(false); }
   }
 
-  const arrow = (k: SortKey) =>
-    sortKey === k ? (sortAsc ? " ↑" : " ↓") : "";
+  const arrow = (k: SortKey) => sortKey === k ? (sortAsc ? " ↑" : " ↓") : "";
 
   return (
     <div>
@@ -165,10 +159,11 @@ export default function GuestsTable({ initial }: { initial: Guest[] }) {
               <th className="text-left px-3 py-2">+1</th>
               <th
                 className="text-left px-3 py-2 cursor-pointer select-none"
-                onClick={() => toggleSort("checked_in_at")}
+                onClick={() => toggleSort("checked_in_day1_at")}
               >
-                Check-in{arrow("checked_in_at")}
+                D1{arrow("checked_in_day1_at")}
               </th>
+              <th className="text-left px-3 py-2">D2</th>
               <th
                 className="text-left px-3 py-2 cursor-pointer select-none"
                 onClick={() => toggleSort("created_at")}
@@ -194,10 +189,15 @@ export default function GuestsTable({ initial }: { initial: Guest[] }) {
                   )}
                 </td>
                 <td className="px-3 py-2">
-                  {g.checked_in_at ? (
-                    <span className="text-[#FFD27A]">
-                      {new Date(g.checked_in_at).toLocaleString("pt-PT")}
-                    </span>
+                  {g.checked_in_day1_at ? (
+                    <span className="text-[#FFD27A]" title={new Date(g.checked_in_day1_at).toLocaleString("pt-PT")}>✓</span>
+                  ) : (
+                    <span className="opacity-50">—</span>
+                  )}
+                </td>
+                <td className="px-3 py-2">
+                  {g.checked_in_day2_at ? (
+                    <span className="text-[#FFD27A]" title={new Date(g.checked_in_day2_at).toLocaleString("pt-PT")}>✓</span>
                   ) : (
                     <span className="opacity-50">—</span>
                   )}
@@ -215,18 +215,27 @@ export default function GuestsTable({ initial }: { initial: Guest[] }) {
                     Reenviar
                   </button>
                   <button
-                    onClick={() => toggleCheckin(g)}
+                    onClick={() => toggleCheckin(g, 1)}
                     disabled={busy === g.id}
-                    className="rounded-full border border-[#FFD27A] text-[#FFD27A] px-3 py-1 text-xs tracking-[.14em] uppercase hover:bg-[#FFD27A] hover:text-[#06111B] transition disabled:opacity-50"
+                    className="rounded-full border border-[#FFD27A] text-[#FFD27A] px-2 py-1 text-xs tracking-[.12em] uppercase hover:bg-[#FFD27A] hover:text-[#06111B] transition disabled:opacity-50 mr-1"
+                    title="Toggle check-in Dia 1"
                   >
-                    {g.checked_in_at ? "Desmarcar" : "Check-in"}
+                    {g.checked_in_day1_at ? "D1 ✓" : "D1"}
+                  </button>
+                  <button
+                    onClick={() => toggleCheckin(g, 2)}
+                    disabled={busy === g.id}
+                    className="rounded-full border border-[#FFD27A]/60 text-[#FFD27A]/80 px-2 py-1 text-xs tracking-[.12em] uppercase hover:bg-[#FFD27A] hover:text-[#06111B] transition disabled:opacity-50"
+                    title="Toggle check-in Dia 2"
+                  >
+                    {g.checked_in_day2_at ? "D2 ✓" : "D2"}
                   </button>
                 </td>
               </tr>
             ))}
             {!filtered.length && (
               <tr>
-                <td colSpan={7} className="px-3 py-10 text-center opacity-50">
+                <td colSpan={8} className="px-3 py-10 text-center opacity-50">
                   Sem resultados.
                 </td>
               </tr>

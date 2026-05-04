@@ -21,7 +21,8 @@ const ROWS = [
     companion_count: 1,
     companion_names: ["Ana"],
     token: "tok-1",
-    checked_in_at: null,
+    checked_in_day1_at: null,
+    checked_in_day2_at: null,
     email_sent_at: null,
   },
   {
@@ -33,7 +34,8 @@ const ROWS = [
     companion_count: 0,
     companion_names: [],
     token: "tok-2",
-    checked_in_at: "2026-04-10T20:00:00Z",
+    checked_in_day1_at: "2026-04-10T20:00:00Z",
+    checked_in_day2_at: null,
     email_sent_at: "2026-04-01T11:00:00Z",
   },
 ];
@@ -57,7 +59,7 @@ describe("GuestsTable", () => {
     const user = userEvent.setup();
     render(<GuestsTable initial={ROWS} />);
     const filterButtons = screen.getAllByRole("button", { name: /^check-in$/i });
-    const filter = filterButtons.find((b) => b.classList.contains("uppercase") || /Check-in/.test(b.className) || b.closest(".rounded-xl"))!;
+    const filter = filterButtons.find((b) => b.closest(".rounded-xl"))!;
     await user.click(filter);
     expect(screen.queryByText("Maria Alves")).not.toBeInTheDocument();
     expect(screen.getByText("Bruno Sousa")).toBeInTheDocument();
@@ -108,9 +110,10 @@ describe("GuestsTable", () => {
     const user = userEvent.setup();
     render(<GuestsTable initial={ROWS} />);
     const mariaRow = screen.getByText("Maria Alves").closest("tr")!;
-    await user.click(within(mariaRow).getByRole("button", { name: /check-in/i }));
+    // Click the D1 button for Maria (not checked in)
+    await user.click(within(mariaRow).getByRole("button", { name: /^D1$/ }));
     expect(fetchMock).toHaveBeenCalledWith("/api/admin/checkin", expect.objectContaining({ method: "PATCH" }));
-    expect(await screen.findByText(/Check-in feito/)).toBeInTheDocument();
+    expect(await screen.findByText(/Check-in D1 feito/)).toBeInTheDocument();
   });
 
   it("toggleCheckin falha → toast err + rollback", async () => {
@@ -118,7 +121,7 @@ describe("GuestsTable", () => {
     const user = userEvent.setup();
     render(<GuestsTable initial={ROWS} />);
     const mariaRow = screen.getByText("Maria Alves").closest("tr")!;
-    await user.click(within(mariaRow).getByRole("button", { name: /check-in/i }));
+    await user.click(within(mariaRow).getByRole("button", { name: /^D1$/ }));
     expect(await screen.findByText(/Falha a atualizar/)).toBeInTheDocument();
   });
 
@@ -127,7 +130,8 @@ describe("GuestsTable", () => {
     const user = userEvent.setup();
     render(<GuestsTable initial={ROWS} />);
     const brunoRow = screen.getByText("Bruno Sousa").closest("tr")!;
-    await user.click(within(brunoRow).getByRole("button", { name: /desmarcar/i }));
+    // Bruno has D1 checked (shows "D1 ✓")
+    await user.click(within(brunoRow).getByRole("button", { name: /D1 ✓/ }));
     const body = JSON.parse((fetchMock.mock.calls[0]![1] as { body: string }).body);
     expect(body.checked_in).toBe(false);
     expect(await screen.findByText(/removido/)).toBeInTheDocument();
@@ -167,8 +171,8 @@ describe("GuestsTable", () => {
     const user = userEvent.setup();
     render(<GuestsTable initial={ROWS} />);
     await user.click(screen.getByRole("columnheader", { name: /^Nome/ }));
-    const checkinCol = screen.getByRole("columnheader", { name: /^Check-in/ });
-    await user.click(checkinCol);
-    expect(checkinCol.textContent).toContain("↓");
+    const d1Col = screen.getByRole("columnheader", { name: /^D1/ });
+    await user.click(d1Col);
+    expect(d1Col.textContent).toContain("↓");
   });
 });

@@ -9,14 +9,20 @@ import { LIMITS } from "@/lib/limits";
 
 export const runtime = "nodejs";
 
-// Token aceita UUID puro (legacy) ou string assinada `<uuid>.<exp>.<sig>`.
-// Limite superior generoso para acomodar formato assinado (~94 chars) com
-// margem para ttl maior no futuro.
 const bodySchema = z.object({
   id: z.string().uuid().optional(),
   token: z.string().min(36).max(512).optional(),
   checked_in: z.boolean().default(true),
+  day: z.number().int().min(1).max(2).optional(),
 });
+
+function festivalDay(): 1 | 2 {
+  const lisbon = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Lisbon" }).format(
+    new Date(),
+  );
+  if (lisbon === "2026-05-09") return 2;
+  return 1; // 2026-05-08 and all other dates default to day 1
+}
 
 export async function PATCH(req: NextRequest) {
   const supa = await supabaseServer();
@@ -59,9 +65,11 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Payload inválido." }, { status: 400 });
   }
 
-  const { id, token, checked_in } = parsed.data;
+  const { id, token, checked_in, day } = parsed.data;
+  const activeDay: 1 | 2 = day === 1 || day === 2 ? day : festivalDay();
+  const dayCol = activeDay === 1 ? "checked_in_day1_at" : "checked_in_day2_at";
+  const otherDayCol = activeDay === 1 ? "checked_in_day2_at" : "checked_in_day1_at";
 
-  // Resolve token assinado (ou UUID legacy) para o `guests.token` persistido.
   let resolvedToken: string | null = null;
   if (token) {
     const verified = await verifyQrToken(token);
@@ -77,7 +85,9 @@ export async function PATCH(req: NextRequest) {
     resolvedToken = verified.uuid;
   }
 
-  const lookup = admin.from("guests").select("id,name,companion_count,checked_in_at");
+  const lookup = admin
+    .from("guests")
+    .select(`id,name,companion_count,checked_in_day1_at,checked_in_day2_at`);
   const { data: guest } = id
     ? await lookup.eq("id", id).maybeSingle()
     : await lookup.eq("token", resolvedToken!).maybeSingle();
@@ -92,11 +102,12 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Convidado não encontrado." }, { status: 404 });
   }
 
-  const wasAlreadyCheckedIn = !!guest.checked_in_at;
+  const wasAlreadyCheckedIn = !!(guest as Record<string, unknown>)[dayCol];
+  const checkedInOtherDay = !!(guest as Record<string, unknown>)[otherDayCol];
 
   const { error } = await admin
     .from("guests")
-    .update({ checked_in_at: checked_in ? new Date().toISOString() : null })
+    .update({ [dayCol]: checked_in ? new Date().toISOString() : null })
     .eq("id", guest.id);
 
   if (error) {
@@ -114,6 +125,7 @@ export async function PATCH(req: NextRequest) {
     actorEmail: user.email,
     targetId: guest.id,
     ip,
+    meta: { day: activeDay },
   });
 
   return NextResponse.json({
@@ -123,6 +135,8 @@ export async function PATCH(req: NextRequest) {
       name: guest.name,
       companion_count: guest.companion_count,
     },
+    day: activeDay,
     was_already_checked_in: wasAlreadyCheckedIn && checked_in,
+    checked_in_other_day: checkedInOtherDay,
   });
 }
