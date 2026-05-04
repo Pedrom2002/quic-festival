@@ -87,3 +87,28 @@ export type InviteCreateInput = z.infer<typeof inviteCreateSchema>;
 export const inviteArchiveSchema = z.object({
   archived: z.boolean(),
 });
+
+// Admin: criar acreditações de media.
+export const accreditationCreateSchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(2, "Nome demasiado curto")
+    .max(120)
+    .regex(namePattern, "Nome contém caracteres inválidos"),
+  email: z.string().trim().toLowerCase().email("Email inválido"),
+  phone: z
+    .string()
+    .trim()
+    .regex(phonePT, "Telefone PT inválido (9XXXXXXXX)"),
+  media_company: z
+    .string()
+    .trim()
+    .min(1, "Empresa de media obrigatória")
+    .max(120),
+});
+export type AccreditationCreateInput = z.infer<typeof accreditationCreateSchema>;
+
+export const accreditationArchiveSchema = z.object({
+  archived: z.boolean(),
+});
