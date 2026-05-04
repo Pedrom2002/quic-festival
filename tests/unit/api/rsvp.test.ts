@@ -18,11 +18,14 @@ vi.mock("@/lib/supabase/admin", () => ({
           single: async () => insertResult.value,
         }),
       }),
-      // dedup branch faz select().eq().maybeSingle()
+      // dedup branch faz select().eq().eq().maybeSingle() ou .eq().is().maybeSingle()
       select: () => ({
         eq: () => ({
+          eq: () => ({ maybeSingle: async () => existingLookup.value }),
+          is: () => ({ maybeSingle: async () => existingLookup.value }),
           maybeSingle: async () => existingLookup.value,
         }),
+        gt: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
       }),
       update: () => ({
         eq: updateMock,
