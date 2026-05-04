@@ -22,6 +22,8 @@ export type AuditAction =
   | "admin.accreditation_link.created"
   | "admin.accreditation_link.archived"
   | "admin.accreditation_link.unarchived"
+  | "admin.vip.grant"
+  | "admin.vip.revoke"
   | "accreditation.submitted";
 
 export async function audit(args: {
