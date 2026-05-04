@@ -21,6 +21,7 @@ const SAMPLE = [
     expires_at: null,
     archived_at: null,
     created_at: "2026-04-26T10:00:00Z",
+    is_vip: false,
   },
 ];
 
@@ -113,5 +114,46 @@ describe("InvitesPanel", () => {
     render(<InvitesPanel initialInvites={SAMPLE} />);
     await user.click(screen.getByRole("button", { name: /Copiar link/i }));
     expect(await screen.findByRole("status")).toHaveTextContent(/Link copiado/);
+  });
+
+  it("expires input: onChange actualiza estado (cobertura)", async () => {
+    const user = userEvent.setup();
+    render(<InvitesPanel initialInvites={[]} />);
+    const expiresInput = screen.getByLabelText(/Expira em/i);
+    await user.type(expiresInput, "2026-12-31T23:59");
+    expect((expiresInput as HTMLInputElement).value).toBeTruthy();
+  });
+
+  it("badge VIP visível para invite is_vip=true", () => {
+    render(
+      <InvitesPanel
+        initialInvites={[{ ...SAMPLE[0]!, is_vip: true }]}
+      />,
+    );
+    expect(screen.getByText("VIP")).toBeInTheDocument();
+  });
+
+  it("badge VIP ausente para invite is_vip=false", () => {
+    render(<InvitesPanel initialInvites={SAMPLE} />);
+    expect(screen.queryByText("VIP")).not.toBeInTheDocument();
+  });
+
+  it("VIP checkbox: cria convite VIP com is_vip=true no body", async () => {
+    fetchMock
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ id: "new", code: "VIPABCDEFGHJ" }), { status: 201 }),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ invites: SAMPLE }), { status: 200 }),
+      );
+    const user = userEvent.setup();
+    render(<InvitesPanel initialInvites={[]} />);
+    await user.click(screen.getByRole("checkbox"));
+    await user.click(screen.getByRole("button", { name: /Gerar VIP/i }));
+    expect(await screen.findByRole("status")).toHaveTextContent(/VIP/);
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0]![1] as { body: string }).body,
+    );
+    expect(body.is_vip).toBe(true);
   });
 });
