@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 
 type ScanResult =
-  | { kind: "ok"; name: string; companions: number; token: string; day: number }
+  | { kind: "ok"; name: string; companions: number; token: string; day: number; hadOtherDay: boolean }
   | { kind: "duplicate"; name: string; token: string; day: number }
-  | { kind: "other_day"; name: string; token: string; day: number }
   | { kind: "not_found"; token: string }
   | { kind: "error"; message: string };
 
@@ -129,8 +128,6 @@ export default function QrScanner() {
         result = { kind: "error", message: json.error ?? "Erro." };
       } else if (json.was_already_checked_in) {
         result = { kind: "duplicate", name: json.guest?.name ?? "?", token, day: activeDay };
-      } else if (json.checked_in_other_day && !json.was_already_checked_in) {
-        result = { kind: "other_day", name: json.guest?.name ?? "?", token, day: activeDay };
       } else {
         result = {
           kind: "ok",
@@ -138,6 +135,7 @@ export default function QrScanner() {
           companions: json.guest?.companion_count ?? 0,
           token,
           day: activeDay,
+          hadOtherDay: !!json.checked_in_other_day,
         };
       }
 
@@ -221,14 +219,13 @@ export default function QrScanner() {
               className="mx-auto mb-5 w-20 h-20 rounded-full border-2 grid place-items-center text-4xl font-black"
               style={iconStyle(modal)}
             >
-              {modal.kind === "ok" ? "✓" : modal.kind === "duplicate" || modal.kind === "other_day" ? "⚠" : "✗"}
+              {modal.kind === "ok" ? "✓" : modal.kind === "duplicate" ? "⚠" : "✗"}
             </div>
 
             {/* Status label */}
             <p className="text-xs tracking-[.22em] uppercase opacity-80 mb-2">
               {modal.kind === "ok" && "Entrada confirmada"}
               {modal.kind === "duplicate" && "Já tinha check-in hoje"}
-              {modal.kind === "other_day" && "Check-in no outro dia"}
               {modal.kind === "not_found" && "QR não reconhecido"}
               {modal.kind === "error" && "Erro"}
             </p>
@@ -241,14 +238,14 @@ export default function QrScanner() {
             )}
 
             {/* Name / detail */}
-            {(modal.kind === "ok" || modal.kind === "duplicate" || modal.kind === "other_day") && (
+            {(modal.kind === "ok" || modal.kind === "duplicate") && (
               <p className="font-serif text-3xl font-black leading-tight mb-1">
                 {modal.name}
               </p>
             )}
-            {modal.kind === "other_day" && (
-              <p className="text-sm opacity-70 mt-2">
-                Já fez check-in no {modal.day === 1 ? "Dia 2" : "Dia 1"} — confirmar entrada?
+            {modal.kind === "ok" && modal.hadOtherDay && (
+              <p className="text-xs opacity-60 mt-1">
+                Já tinha entrado no {modal.day === 1 ? "Dia 2" : "Dia 1"}
               </p>
             )}
             {modal.kind === "not_found" && (
@@ -345,16 +342,16 @@ export default function QrScanner() {
                   className={`flex items-center gap-3 px-3 py-2 rounded-lg border ${
                     r.kind === "ok"
                       ? "border-emerald-500/40 text-emerald-200"
-                      : r.kind === "duplicate" || r.kind === "other_day"
+                      : r.kind === "duplicate"
                         ? "border-amber-500/40 text-amber-200"
                         : "border-rose-500/40 text-rose-200"
                   }`}
                 >
                   <span className="text-base">
-                    {r.kind === "ok" ? "✓" : r.kind === "duplicate" || r.kind === "other_day" ? "⚠" : "✗"}
+                    {r.kind === "ok" ? "✓" : r.kind === "duplicate" ? "⚠" : "✗"}
                   </span>
                   <span className="flex-1 truncate">
-                    {r.kind === "ok" || r.kind === "duplicate" || r.kind === "other_day"
+                    {r.kind === "ok" || r.kind === "duplicate"
                       ? r.name
                       : r.kind === "not_found"
                         ? "Token desconhecido"
@@ -373,13 +370,13 @@ export default function QrScanner() {
 function modalStyle(r: ScanResult): React.CSSProperties {
   if (r.kind === "ok")
     return { background: "#064e3b", borderColor: "#34d399", color: "#ecfdf5" };
-  if (r.kind === "duplicate" || r.kind === "other_day")
+  if (r.kind === "duplicate")
     return { background: "#78350f", borderColor: "#fbbf24", color: "#fffbeb" };
   return { background: "#7f1d1d", borderColor: "#f87171", color: "#fef2f2" };
 }
 
 function iconStyle(r: ScanResult): React.CSSProperties {
   if (r.kind === "ok") return { borderColor: "#34d399", background: "#065f46" };
-  if (r.kind === "duplicate" || r.kind === "other_day") return { borderColor: "#fbbf24", background: "#92400e" };
+  if (r.kind === "duplicate") return { borderColor: "#fbbf24", background: "#92400e" };
   return { borderColor: "#f87171", background: "#991b1b" };
 }
