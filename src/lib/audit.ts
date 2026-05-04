@@ -19,9 +19,10 @@ export type AuditAction =
   | "admin.invite.created"
   | "admin.invite.archived"
   | "admin.invite.unarchived"
-  | "admin.accreditation.created"
-  | "admin.accreditation.archived"
-  | "admin.accreditation.unarchived";
+  | "admin.accreditation_link.created"
+  | "admin.accreditation_link.archived"
+  | "admin.accreditation_link.unarchived"
+  | "accreditation.submitted";
 
 export async function audit(args: {
   action: AuditAction;

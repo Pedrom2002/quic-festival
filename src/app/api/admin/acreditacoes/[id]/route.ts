@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 
 const idSchema = z.string().uuid();
 
-// PATCH /api/admin/acreditacoes/[id] — archive / unarchive.
+// PATCH /api/admin/acreditacoes/[id] — archive / unarchive link.
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -31,7 +31,7 @@ export async function PATCH(
 
   const admin = supabaseAdmin();
   const { error } = await admin
-    .from("accreditations")
+    .from("accreditation_links")
     .update({ archived_at: parsed.data.archived ? new Date().toISOString() : null })
     .eq("id", idCheck.data);
 
@@ -41,8 +41,8 @@ export async function PATCH(
 
   await audit({
     action: parsed.data.archived
-      ? "admin.accreditation.archived"
-      : "admin.accreditation.unarchived",
+      ? "admin.accreditation_link.archived"
+      : "admin.accreditation_link.unarchived",
     actorEmail: guard.user.email,
     targetId: idCheck.data,
     ip: ipFromHeaders(req.headers),
