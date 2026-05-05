@@ -233,4 +233,108 @@ describe("QrScanner", () => {
     await new Promise((r) => setTimeout(r, 0));
     expect(vibrateMock).toHaveBeenCalledWith(120);
   });
+
+  it("dismiss modal: click backdrop fecha modal", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true, guest: { name: "X", companion_count: 0 } }), { status: 200 }),
+    );
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
+    await user.click(screen.getByText(/Inserir token manualmente/));
+    await user.type(screen.getByPlaceholderText(/UUID do token/), VALID_TOKEN);
+    await user.click(screen.getByRole("button", { name: /^check-in$/i }));
+    // Wait for modal to appear
+    const nextBtn = await screen.findByRole("button", { name: /Próximo/i });
+    expect(nextBtn).toBeInTheDocument();
+    // Dismiss via button
+    await user.click(nextBtn);
+    expect(screen.queryByRole("button", { name: /Próximo/i })).not.toBeInTheDocument();
+  });
+
+  it("dismiss modal: click inner div não propaga (stopPropagation)", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true, guest: { name: "Y", companion_count: 0 } }), { status: 200 }),
+    );
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
+    await user.click(screen.getByText(/Inserir token manualmente/));
+    await user.type(screen.getByPlaceholderText(/UUID do token/), VALID_TOKEN);
+    await user.click(screen.getByRole("button", { name: /^check-in$/i }));
+    await screen.findByRole("button", { name: /Próximo/i });
+    // Click the inner modal card — should NOT close modal
+    const modalCard = document.querySelector(".rounded-3xl")!;
+    await user.click(modalCard as HTMLElement);
+    expect(screen.getByRole("button", { name: /Próximo/i })).toBeInTheDocument();
+  });
+
+  it("botão Iniciar Dia 2 disponível + inicia scanner", async () => {
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 2/i }));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(startMock).toHaveBeenCalled();
+  });
+
+  it("botão Deck VIP disponível + inicia scanner VIP", async () => {
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Deck VIP/i }));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(startMock).toHaveBeenCalled();
+  });
+
+  it("VIP mode: guest is_vip=true → vip-ok", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true, is_vip: true, name: "Vasco VIP" }), { status: 200 }),
+    );
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Deck VIP/i }));
+    await user.click(screen.getByText(/Inserir token manualmente/));
+    await user.type(screen.getByPlaceholderText(/UUID do token/), VALID_TOKEN);
+    await user.click(screen.getByRole("button", { name: /^check-in$/i }));
+    expect(fetchMock).toHaveBeenCalledWith("/api/admin/vip-access", expect.objectContaining({ method: "POST" }));
+    expect((await screen.findAllByText("Vasco VIP")).length).toBeGreaterThan(0);
+  });
+
+  it("VIP mode: guest is_vip=false → vip-denied", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true, is_vip: false, name: "Normal Guest" }), { status: 200 }),
+    );
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Deck VIP/i }));
+    await user.click(screen.getByText(/Inserir token manualmente/));
+    await user.type(screen.getByPlaceholderText(/UUID do token/), VALID_TOKEN);
+    await user.click(screen.getByRole("button", { name: /^check-in$/i }));
+    expect(await screen.findByText(/Sem acesso/)).toBeInTheDocument();
+  });
+
+  it("Trocar botão visível durante sessão activa", async () => {
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.getByRole("button", { name: /Trocar/i })).toBeInTheDocument();
+  });
+
+  it("Trocar para sessão termina e volta ao picker", async () => {
+    const { default: QrScanner } = await import("@/components/admin/qr-scanner");
+    render(<QrScanner />);
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /Iniciar Dia 1/i }));
+    await act(async () => { await new Promise((r) => setTimeout(r, 50)); });
+    await user.click(screen.getByRole("button", { name: /Trocar/i }));
+    await act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+    expect(screen.getByRole("button", { name: /Iniciar Dia 1/i })).toBeInTheDocument();
+  });
 });

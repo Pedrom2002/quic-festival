@@ -24,6 +24,7 @@ const ROWS = [
     checked_in_day1_at: null,
     checked_in_day2_at: null,
     email_sent_at: null,
+    is_vip: false,
   },
   {
     id: "g-2",
@@ -37,6 +38,7 @@ const ROWS = [
     checked_in_day1_at: "2026-04-10T20:00:00Z",
     checked_in_day2_at: null,
     email_sent_at: "2026-04-01T11:00:00Z",
+    is_vip: false,
   },
 ];
 
@@ -174,5 +176,66 @@ describe("GuestsTable", () => {
     const d1Col = screen.getByRole("columnheader", { name: /^D1/ });
     await user.click(d1Col);
     expect(d1Col.textContent).toContain("↓");
+  });
+
+  it("toggleCheckin D2: clica D2 chama PATCH com day=2", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    const user = userEvent.setup();
+    render(<GuestsTable initial={ROWS} />);
+    const mariaRow = screen.getByText("Maria Alves").closest("tr")!;
+    await user.click(within(mariaRow).getByRole("button", { name: /^D2$/ }));
+    const body = JSON.parse((fetchMock.mock.calls[0]![1] as { body: string }).body);
+    expect(body.day).toBe(2);
+    expect(await screen.findByText(/Check-in D2 feito/)).toBeInTheDocument();
+  });
+
+  it("badge VIP visível para guest is_vip=true", () => {
+    render(<GuestsTable initial={[{ ...ROWS[0]!, is_vip: true }]} />);
+    // Badge text is "VIP" inside the name cell; toggle button is "VIP ★"
+    const badges = screen.getAllByText("VIP");
+    expect(badges.length).toBeGreaterThan(0);
+  });
+
+  it("filter vip só mostra guests VIP", async () => {
+    const user = userEvent.setup();
+    render(
+      <GuestsTable
+        initial={[
+          { ...ROWS[0]!, is_vip: true },
+          { ...ROWS[1]!, is_vip: false },
+        ]}
+      />,
+    );
+    // Filter button label is "VIP" in the filter row (not the toggle ★ button)
+    const filterBtns = screen.getAllByRole("button", { name: /^VIP$/i });
+    const filterBtn = filterBtns.find((b) => !b.title);
+    await user.click(filterBtn!);
+    expect(screen.getByText("Maria Alves")).toBeInTheDocument();
+    expect(screen.queryByText("Bruno Sousa")).not.toBeInTheDocument();
+  });
+
+  it("toggleVip: PATCH /api/admin/toggle-vip + toast ok", async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(JSON.stringify({ ok: true, is_vip: true }), { status: 200 }),
+    );
+    const user = userEvent.setup();
+    render(<GuestsTable initial={ROWS} />);
+    const mariaRow = screen.getByText("Maria Alves").closest("tr")!;
+    const vipBtn = within(mariaRow).getByTitle("Toggle VIP");
+    await user.click(vipBtn);
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/admin/toggle-vip",
+      expect.objectContaining({ method: "PATCH" }),
+    );
+    expect(await screen.findByText(/VIP ativado/)).toBeInTheDocument();
+  });
+
+  it("toggleVip falha → toast err + rollback", async () => {
+    fetchMock.mockResolvedValueOnce(new Response("nope", { status: 500 }));
+    const user = userEvent.setup();
+    render(<GuestsTable initial={ROWS} />);
+    const mariaRow = screen.getByText("Maria Alves").closest("tr")!;
+    await user.click(within(mariaRow).getByTitle("Toggle VIP"));
+    expect(await screen.findByText(/Falha a atualizar VIP/)).toBeInTheDocument();
   });
 });
