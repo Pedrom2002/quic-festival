@@ -1,9 +1,9 @@
 // Centralised tunables. Change here, redeploy.
 export const LIMITS = {
   rsvp: {
-    perIp: { max: 10, windowMs: 60_000 },
-    perIpEmail: { max: 3, windowMs: 60_000 },
-    perEmailGlobal: { max: 5, windowMs: 60 * 60_000 },
+    perIp: { max: 100, windowMs: 60_000 },
+    perIpEmail: { max: 20, windowMs: 60_000 },
+    perEmailGlobal: { max: 50, windowMs: 60 * 60_000 },
   },
   qr: { perIp: { max: 60, windowMs: 60_000 } },
   ics: { perIp: { max: 30, windowMs: 60_000 } },
