@@ -8,7 +8,7 @@ export default async function AdminInvitesPage() {
   const { data } = await admin
     .from("invite_links")
     .select(
-      "id, code, label, max_uses, uses_count, expires_at, archived_at, created_at",
+      "id, code, label, max_uses, uses_count, expires_at, archived_at, created_at, is_vip",
     )
     .order("archived_at", { ascending: true, nullsFirst: true })
     .order("created_at", { ascending: false });
@@ -22,6 +22,7 @@ export default async function AdminInvitesPage() {
     expires_at: (row.expires_at as string | null) ?? null,
     archived_at: (row.archived_at as string | null) ?? null,
     created_at: row.created_at as string,
+    is_vip: (row.is_vip as boolean) ?? false,
   }));
 
   return <InvitesPanel initialInvites={invites} />;

@@ -16,7 +16,7 @@ export async function GET() {
   const { data, error } = await admin
     .from("invite_links")
     .select(
-      "id, code, label, max_uses, uses_count, expires_at, archived_at, created_at",
+      "id, code, label, max_uses, uses_count, expires_at, archived_at, created_at, is_vip",
     )
     .order("archived_at", { ascending: true, nullsFirst: true })
     .order("created_at", { ascending: false });
@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
         label: parsed.data.label ?? null,
         max_uses: parsed.data.max_uses,
         expires_at: parsed.data.expires_at ?? null,
+        is_vip: parsed.data.is_vip ?? false,
         created_by: guard.user.id,
       })
       .select("id, code")
