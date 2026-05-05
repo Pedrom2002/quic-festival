@@ -46,7 +46,7 @@ export default function AcreditadoActions({
 
     // Stars
     ctx.fillStyle = "rgba(255,210,122,0.55)";
-    ctx.font = '500 13px "DM Sans", sans-serif';
+    ctx.font = "13px sans-serif";
     ctx.fillText("★   ★   ★", W / 2, 88);
 
     // QUIC
@@ -128,7 +128,7 @@ export default function AcreditadoActions({
 
     // Bottom stars
     ctx.fillStyle = "rgba(255,210,122,0.35)";
-    ctx.font = '500 11px "DM Sans", sans-serif';
+    ctx.font = "11px sans-serif";
     ctx.fillText("★   ★   ★", W / 2, H - 46);
 
     const url = canvas.toDataURL("image/png");
