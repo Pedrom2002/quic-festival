@@ -135,23 +135,6 @@ export async function POST(req: NextRequest) {
   // prevents authenticated callers rewriting ics drift).
   const ics = buildFestivalIcs(data.name);
 
-  // Pre-check de dedup: se o email já existe, devolve direto o token do
-  // registo existente sem tocar no contador de invites. Evita o "counter
-  // bump fantasma" (sobe + release) quando alguém re-submete via invite.
-  // Race-window: se outro cliente regista o mesmo email entre este SELECT
-  // e o INSERT abaixo, o caminho 23505 trata na mesma.
-  const { data: existingPre } = await supabase
-    .from("guests")
-    .select("token")
-    .eq("email", data.email)
-    .maybeSingle();
-  if (existingPre?.token) {
-    const dupeToken = await signQrToken(existingPre.token);
-    const dupeBody = { token: dupeToken } as const;
-    await cacheIdempotency(supabase, ip, idempotencyKey, dupeBody, 200);
-    return NextResponse.json(dupeBody);
-  }
-
   // Reclamar lugar do invite (se aplicável). Atómico via SQL function.
   let invite_link_id: string | null = null;
   let invite_is_vip = false;
@@ -206,15 +189,11 @@ export async function POST(req: NextRequest) {
       await supabase.rpc("release_invite_seat", { p_invite_link_id: invite_link_id });
     }
     if (insertError.code === "23505") {
-      // Email já registado: devolve o token do registo existente para que o
-      // form redirecione para /confirmado/<token>. Concessão deliberada à
-      // defesa anti user-enumeration: prioridade é UX consistente para um
-      // utilizador legítimo a re-submeter.
-      const { data: existing } = await supabase
-        .from("guests")
-        .select("token")
-        .eq("email", data.email)
-        .maybeSingle();
+      // Duplicate (email, invite_link_id): devolve o token do registo
+      // existente para que o form redirecione para /confirmado/<token>.
+      const { data: existing } = await (invite_link_id
+        ? supabase.from("guests").select("token").eq("email", data.email).eq("invite_link_id", invite_link_id).maybeSingle()
+        : supabase.from("guests").select("token").eq("email", data.email).is("invite_link_id", null).maybeSingle());
       if (existing?.token) {
         const dupeToken = await signQrToken(existing.token);
         const dupeBody = { token: dupeToken } as const;

@@ -36,9 +36,11 @@ vi.mock("@/lib/supabase/admin", () => ({
             single: async () => insertResult.value,
           }),
         }),
-        // dedup branch lookup
+        // dedup branch lookup — supports .eq().eq().maybeSingle() or .eq().is().maybeSingle()
         select: () => ({
           eq: () => ({
+            eq: () => ({ maybeSingle: async () => ({ data: { token: "22222222-2222-4222-8222-222222222222" }, error: null }) }),
+            is: () => ({ maybeSingle: async () => ({ data: { token: "22222222-2222-4222-8222-222222222222" }, error: null }) }),
             maybeSingle: async () => ({ data: { token: "22222222-2222-4222-8222-222222222222" }, error: null }),
           }),
         }),
