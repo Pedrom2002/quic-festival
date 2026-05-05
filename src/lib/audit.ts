@@ -18,7 +18,10 @@ export type AuditAction =
   | "admin.guest.exported"
   | "admin.invite.created"
   | "admin.invite.archived"
-  | "admin.invite.unarchived";
+  | "admin.invite.unarchived"
+  | "admin.accreditation.created"
+  | "admin.accreditation.archived"
+  | "admin.accreditation.unarchived";
 
 export async function audit(args: {
   action: AuditAction;
