@@ -1,4 +1,5 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import * as React from "react";
+import { screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -14,10 +15,8 @@ vi.mock("framer-motion", () => ({
     {
       get:
         (_t, tag: string) =>
-        ({ children, ...rest }: Record<string, unknown>) => {
-          const React = require("react");
-          return React.createElement(tag, rest, children);
-        },
+        ({ children, ...rest }: Record<string, unknown>) =>
+          React.createElement(tag, rest, children),
     },
   ),
   useReducedMotion: () => false,
