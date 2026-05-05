@@ -88,8 +88,20 @@ export const inviteArchiveSchema = z.object({
   archived: z.boolean(),
 });
 
-// Admin: criar acreditações de media.
-export const accreditationCreateSchema = z.object({
+// Admin: criar links de acreditação (igual a inviteCreateSchema).
+export const accreditationLinkCreateSchema = z.object({
+  label: z.string().trim().max(120).optional(),
+  max_uses: z.number().int().min(1).max(1000),
+  expires_at: z.string().datetime().optional(),
+});
+export type AccreditationLinkCreateInput = z.infer<typeof accreditationLinkCreateSchema>;
+
+export const accreditationArchiveSchema = z.object({
+  archived: z.boolean(),
+});
+
+// Público: submissão do formulário de acreditação media.
+export const accreditationRsvpSchema = z.object({
   name: z
     .string()
     .trim()
@@ -106,9 +118,10 @@ export const accreditationCreateSchema = z.object({
     .trim()
     .min(1, "Empresa de media obrigatória")
     .max(120),
+  accreditationCode: z
+    .string()
+    .trim()
+    .regex(INVITE_CODE_RE, "Código inválido")
+    .optional(),
 });
-export type AccreditationCreateInput = z.infer<typeof accreditationCreateSchema>;
-
-export const accreditationArchiveSchema = z.object({
-  archived: z.boolean(),
-});
+export type AccreditationRsvpInput = z.infer<typeof accreditationRsvpSchema>;
