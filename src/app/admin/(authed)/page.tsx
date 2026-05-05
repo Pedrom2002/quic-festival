@@ -11,7 +11,7 @@ export default async function AdminPage() {
     admin
       .from("guests")
       .select(
-        "id,created_at,name,email,phone,companion_count,companion_names,token,checked_in_day1_at,checked_in_day2_at,email_sent_at,email_failed_at,email_attempts",
+        "id,created_at,name,email,phone,companion_count,companion_names,token,checked_in_day1_at,checked_in_day2_at,email_sent_at,email_failed_at,email_attempts,is_vip",
       )
       .order("created_at", { ascending: false }),
     admin
@@ -24,6 +24,7 @@ export default async function AdminPage() {
   const accRows = accreditationsData ?? [];
 
   const companions = rows.reduce((s, g) => s + (g.companion_count ?? 0), 0);
+  const vipCount = rows.filter((g) => g.is_vip).length;
   const checkedInDay1 = rows.filter((g) => g.checked_in_day1_at).length;
   const checkedInDay2 = rows.filter((g) => g.checked_in_day2_at).length;
   const checkedInEither = rows.filter(
@@ -55,6 +56,7 @@ export default async function AdminPage() {
           email_sent_at: (g.email_sent_at as string | null) ?? null,
           email_failed_at: (g.email_failed_at as string | null) ?? null,
           email_attempts: (g.email_attempts as number) ?? 0,
+          is_vip: (g.is_vip as boolean) ?? false,
         }))}
         guestStats={{
           total: rows.length,
@@ -65,6 +67,7 @@ export default async function AdminPage() {
           checkInRate: totalSeats > 0 ? Math.round((checkedInEither / totalSeats) * 100) : 0,
           emailFailed: rows.filter((g) => g.email_failed_at).length,
           lastCheckIn,
+          vipCount,
         }}
         accreditations={accRows.map((a) => ({
           id: a.id as string,
