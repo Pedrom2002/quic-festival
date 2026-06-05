@@ -48,6 +48,12 @@ export default async function AdminLayout({
             Acreditações
           </a>
           <a
+            href="/admin/cards"
+            className="text-xs tracking-[.18em] uppercase opacity-70 hover:opacity-100"
+          >
+            Cards
+          </a>
+          <a
             href="/admin/account"
             className="text-xs tracking-[.18em] uppercase opacity-70 hover:opacity-100"
           >
