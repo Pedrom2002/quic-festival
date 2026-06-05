@@ -1,13 +1,14 @@
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import DashboardTabs from "@/components/admin/dashboard-tabs";
 import LiveAutoRefresh from "@/components/admin/live-auto-refresh";
+import { getAllTeamMembers } from "@/lib/team-members";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminPage() {
   const admin = supabaseAdmin();
 
-  const [{ data: guests }, { data: accreditationsData }] = await Promise.all([
+  const [{ data: guests }, { data: accreditationsData }, teamMembers] = await Promise.all([
     admin
       .from("guests")
       .select(
@@ -18,6 +19,7 @@ export default async function AdminPage() {
       .from("accreditations")
       .select("id,created_at,name,email,phone,media_company,token")
       .order("created_at", { ascending: false }),
+    getAllTeamMembers(),
   ]);
 
   const rows = guests ?? [];
@@ -79,6 +81,8 @@ export default async function AdminPage() {
           token: a.token as string,
         }))}
         accreditationStats={{ total: accRows.length, companies }}
+        teamMembers={teamMembers}
+        isAdmin={true}
       />
     </div>
   );

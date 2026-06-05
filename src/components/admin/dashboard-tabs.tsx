@@ -3,6 +3,8 @@
 import { useState } from "react";
 import GuestsTable from "@/components/admin/guests-table";
 import AccreditationsTable from "@/components/admin/accreditations-table";
+import CardsPanel from "@/components/admin/cards-panel";
+import type { TeamMember } from "@/lib/team-members";
 
 type Guest = {
   id: string;
@@ -48,7 +50,7 @@ type AccreditationStats = {
   companies: number;
 };
 
-type Tab = "convidados" | "acreditacoes";
+type Tab = "convidados" | "acreditacoes" | "cards";
 
 function Stat({
   label,
@@ -91,11 +93,15 @@ export default function DashboardTabs({
   guestStats,
   accreditations,
   accreditationStats,
+  teamMembers,
+  isAdmin,
 }: {
   guests: Guest[];
   guestStats: GuestStats;
   accreditations: Accreditation[];
   accreditationStats: AccreditationStats;
+  teamMembers: TeamMember[];
+  isAdmin: boolean;
 }) {
   const [tab, setTab] = useState<Tab>("convidados");
 
@@ -119,6 +125,7 @@ export default function DashboardTabs({
         <div className="flex gap-2">
           {tabBtn("convidados", "Convidados")}
           {tabBtn("acreditacoes", "Acreditações Media")}
+          {tabBtn("cards", "Cards")}
         </div>
         <div className="flex gap-2 flex-wrap">
           {tab === "convidados" && (
@@ -197,6 +204,11 @@ export default function DashboardTabs({
           </div>
           <AccreditationsTable initial={accreditations} />
         </>
+      )}
+
+      {/* Cards */}
+      {tab === "cards" && (
+        <CardsPanel initial={teamMembers} isAdmin={isAdmin} />
       )}
     </div>
   );
